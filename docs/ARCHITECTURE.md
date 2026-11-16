@@ -20,42 +20,49 @@ Nom affiché : **Fern** (`MDONE_DISPLAY_NAME` dans `project.yml`). Le module Swi
 7. Les modèles SwiftData (`CachedTask`, `CachedProject`, `CachedLabel`, `FocusRecord`, `PendingOperation`) ne changent pas de schéma sans migration (risque de perte de la file hors ligne).
 8. Pas de `—` ni `--` dans le texte, le code et les docs.
 9. Le code n'est pas compilable sur le serveur de dev : tout passe par la CI macOS. Une PR = un sujet, petite, compilée par la CI avant d'enchaîner.
+10. Tout texte visible est dans un String Catalog (`mDone/Localizable.xcstrings`) avec l'anglais comme clé et le français (`docs/localization.md`). Une phrase est une clé entière : pas de concaténation, pas de `count == 1 ?`. `scripts/check-things-localization.py` le vérifie pour le code Things.
+11. Le module reste en Swift 5.9. Le code neuf évite ce qui deviendra une erreur en Swift 6 : propriétés statiques de type non `Sendable`, captures non `Sendable` dans une fermeture `@Sendable`, moniteurs `NSEvent` ou `NotificationCenter` qui touchent un état isolé sans repasser par `@MainActor`.
 
 ## Structure
 
+État réel. Les écrans d'avant le fork (`MainTabView`, `MacContentView`, `Features/TaskList`, ...) restent et servent de repli quand le réglage `thingsUIEnabled` est faux.
+
 ```
 mDone/
-  App/            point d'entrée, composition, AppState (façade amincie), Navigation/
+  App/            point d'entrée, composition, AppState (façade, pas encore amincie), intents
   Core/
-    Models/       VTask, Project, VLabel, Bucket... (Foundation seulement)
+    Models/       VTask, Project, VLabel, Bucket...
     Networking/   APIClient, Endpoint, *Service (actors), Auth
     Persistence/  SwiftData, ModelStoreBootstrap
     Sync/         SyncService, file d'opérations, NetworkMonitor
-    Preferences/  clés typées, types *Preference
+    Preferences/  clés typées et types *Preference (SmartParsingPreference : actif par défaut)
   Domain/
-    ThingsLists/  Inbox, Today (+ This Evening), Upcoming, Anytime, Someday, Logbook
-    Scheduling/   When, Deadline, QuickSchedule, occurrences
-    Repeat/       règles de répétition
-    Parser/       SmartTaskParser, estimation, Markdown de description
-    Filtering/    filtres, tris, positionnement
-    Mapping/      encodage des concepts Things sur Vikunja (voir things-spec/07)
-    Focus/
+    ThingsLists/  ThingsListBuilder : Inbox, Today (+ This Evening), Upcoming, Anytime, Someday, Logbook
+    Mapping/      encodage Things sur Vikunja (things-spec/07) : When, Deadline, checklist, headings,
+                  arbre de projets et Areas, cibles de déplacement, langage naturel (ThingsNaturalLanguage)
+    Scheduling/ Repeat/ Parser/ Filtering/ Focus/
   DesignSystem/
-    Tokens/       couleurs, typo, espacements, animations (clair et sombre)
-    Components/   case ronde, ligne de to-do, chips, ...
-    Icons/        icônes maison (pas d'assets Things)
-  Features/<Feature>/   View + ViewModel : Home, Today, Upcoming, Anytime, Someday, Logbook,
-                        Inbox, Area, Project, TaskDetail, QuickEntry, QuickFind, Board,
-                        Calendar, Focus, Settings, Setup, Notifications, Sidebar
+    Tokens/       ThingsColors, ThingsMetrics (dont Sidebar), ThingsTypography, ThingsMotion, ThingsIcons
+    Components/   composants génériques d'avant le fork, et Things/ (case, ligne de to-do, en-têtes,
+                  boîte d'événements, Magic Plus)
+  Features/
+    Things/       écrans iPhone (Home, liste, projet), ViewModels (ThingsListViewModel et ses extensions
+                  NaturalLanguage et Reorder, ThingsHomeViewModel), ThingsRowMapper, ThingsQuickFindEngine,
+                  ThingsShortcutTable, ThingsRoute, plans de glisser-déposer (purs)
+    Board/ Calendar/ Focus/ Notifications/ Projects/ QuickAdd/ Settings/ Setup/ TaskDetail/ TaskList/
   Platform/
-    iOS/          shell (navigation iPhone), Magic Plus, gestes, Live Activity, partage
-    macOS/        fenêtre, sidebar, inspecteur, Quick Entry global, menus, raccourcis
-  Resources/      inchangé
+    iOS/          ThingsRootView (shell iPhone), FocusManager, MainTabView, ShakeDetector
+    macOS/        Things* : fenêtre (ThingsMacRootView, ThingsMacModel), sidebar, liste, éditeur, popovers,
+                  commandes de menu, Quick Entry (NSPanel), Quick Find (carte), Type Travel ; et l'ancienne
+                  fenêtre (MacContentView, ...)
+  Resources/
 mDoneShared/      partagé avec les extensions, n'importe rien de mDone/
 mDoneWidgets/, mDoneMacWidgets/
-mDoneTests/       miroir de mDone/ (Core, Domain, Features, App, Helpers)
-docs/             ARCHITECTURE.md, ROADMAP.md, things-spec/, architecture-audit/
-scripts/          check-layering.sh
+mDoneTests/       Domain/ et Features/ pour les tests Things, le reste à plat (AppState, services, intents)
+localization/     fichiers plats par langue (fr.json, zh-Hans.json), voir docs/localization.md
+docs/             ARCHITECTURE.md, ROADMAP.md, localization.md, things-spec/ (spec, DEVIATIONS.md, WIRING-*.md),
+                  architecture-audit/
+scripts/          check-layering.sh, check-things-localization.py, localization.py, update-string-catalogs.sh
 ```
 
 ## Couches
@@ -65,6 +72,23 @@ Core/Models, Domain  <  Core/(Networking, Persistence, Sync, Preferences)  <  Fe
 ```
 
 Règles détaillées par dossier : `docs/architecture-audit/04-proposed-structure.md` §5.
+
+### Vérification : `scripts/check-layering.sh`
+
+Lancée par `ci-build.yml` (job `layering`, Ubuntu). Elle cherche par grep, hors lignes de commentaire :
+
+- Core/Models et Domain : pas d'import SwiftUI, UIKit, AppKit, SwiftData, EventKit, pas de `AppState` ni `UserDefaults.standard` ;
+- Core/Networking : pas d'import UIKit, AppKit, SwiftUI ;
+- DesignSystem : pas de `AppState` ni `SwiftData` ;
+- Features et DesignSystem : pas de type Platform de Things (`ThingsMac*`, Quick Entry, Type Travel, `ThingsRootView`), DesignSystem sans ViewModel Things ;
+- Core et Domain : pas de ViewModel, mapper, moteur ou table de raccourcis Things ;
+- mDoneShared : pas d'import de `mDone` ni `@testable`.
+
+Sans l'option strict, le script avertit et rend 0. Les violations connues viennent d'avant le fork (`Core/Models/Label.swift`, `CalendarEvent.swift`, `VNotification.swift`, `Domain/Focus/FocusHistoryQuery.swift`, `Core/Networking/WebAuthenticator.swift`, `DesignSystem/Components/TaskRow.swift`). Le code Things n'en ajoute aucune ; activer l'option strict demande de les traiter d'abord.
+
+### Glisser-déposer et réordonnancement
+
+Documentés par le lot qui les porte (`docs/things-spec/WIRING-AGENT1.md`, `WIRING-AGENT2.md`, et la spec de glisser-déposer qui l'accompagne). Rien n'est décrit ici pour éviter deux sources.
 
 ## Conventions
 

@@ -172,45 +172,39 @@ extension ThingsMacModel {
         }
     }
 
-    /// Handles a drop on a sidebar row. `targetProjectID` is the project or
-    /// Area under the pointer. Returns whether the drop was accepted.
-    @discardableResult
-    func handleDrop(_ payloads: [String], onProject targetProjectID: Int64) -> Bool {
-        guard let first = payloads.compactMap({ ThingsDragPayload(encoded: $0) }).first else { return false }
-        switch first {
-        case .todo(let taskID):
-            guard let task = appState.tasks.first(where: { $0.id == taskID }) else { return false }
-            if task.projectId == targetProjectID { return false }
-            move(task, toProject: targetProjectID)
-            return true
-        case .project(let projectID):
-            if !projectTree.canMove(projectID: projectID, toParent: targetProjectID) { return false }
-            moveProject(projectID, toParent: targetProjectID)
-            return true
+    /// What dropping `payload` on a sidebar row would do, nil when the row refuses it. Reads
+    /// the facts from the app state and leaves the decision to `ThingsDropResolver`, so the
+    /// hover highlight and the drop agree.
+    func dropAction(for payload: ThingsDragPayload, on target: ThingsDropTarget) -> ThingsDropAction? {
+        let task = payload.todoID.flatMap { id in appState.tasks.first(where: { $0.id == id }) }
+        var canReparent = false
+        if let projectID = payload.projectID, case .project(let parentID) = target {
+            canReparent = projectTree.canMove(projectID: projectID, toParent: parentID)
         }
+        let facts = ThingsDropFacts(
+            taskProjectID: task?.projectId,
+            taskWhen: task.map { ThingsWhen.resolve(task: $0, now: Date(), calendar: Calendar.current) },
+            inboxProjectID: appState.defaultProject?.id,
+            canReparent: canReparent
+        )
+        return ThingsDropResolver.action(for: payload, on: target, facts: facts)
     }
 
-    /// Handles a drop of a to-do on a built-in list row: Inbox moves it to the
-    /// Inbox project, Today and Someday schedule it. Other lists refuse.
+    /// Runs a drop on a sidebar row. Returns whether the row accepted it.
     @discardableResult
-    func handleDrop(_ payloads: [String], onList list: ThingsList) -> Bool {
-        guard let first = payloads.compactMap({ ThingsDragPayload(encoded: $0) }).first else { return false }
-        guard case .todo(let taskID) = first,
-              let task = appState.tasks.first(where: { $0.id == taskID }) else { return false }
-        switch list {
-        case .inbox:
-            guard let inbox = appState.defaultProject, task.projectId != inbox.id else { return false }
-            move(task, toProject: inbox.id)
-            return true
-        case .today:
-            schedule(task, when: .today)
-            return true
-        case .someday:
-            schedule(task, when: .someday)
-            return true
-        default:
-            return false
+    func handleDrop(_ payload: ThingsDragPayload, on target: ThingsDropTarget) -> Bool {
+        guard let action = dropAction(for: payload, on: target) else { return false }
+        switch action {
+        case .moveTodo(let taskID, let projectID):
+            guard let task = appState.tasks.first(where: { $0.id == taskID }) else { return false }
+            move(task, toProject: projectID)
+        case .scheduleTodo(let taskID, let when):
+            guard let task = appState.tasks.first(where: { $0.id == taskID }) else { return false }
+            schedule(task, when: when)
+        case .reparentProject(let projectID, let parentID):
+            moveProject(projectID, toParent: parentID)
         }
+        return true
     }
 
     private func schedule(_ task: VTask, when: ThingsWhen) {

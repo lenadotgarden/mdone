@@ -1,5 +1,26 @@
 import Foundation
 
+/// The two ISO 8601 formats Vikunja sends (with and without fractional
+/// seconds). `ISO8601DateFormatter` is not declared `Sendable`, but Apple
+/// documents it as thread-safe once configured, and these two are never
+/// mutated after `init`, so sharing them with the decoder's `@Sendable`
+/// date closure is safe.
+private final class APIDateParser: @unchecked Sendable {
+    private let withFraction: ISO8601DateFormatter
+    private let withoutFraction: ISO8601DateFormatter
+
+    init() {
+        withFraction = ISO8601DateFormatter()
+        withFraction.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        withoutFraction = ISO8601DateFormatter()
+        withoutFraction.formatOptions = [.withInternetDateTime]
+    }
+
+    func date(from string: String) -> Date? {
+        withFraction.date(from: string) ?? withoutFraction.date(from: string)
+    }
+}
+
 actor APIClient {
     private let session: URLSession
     private let decoder: JSONDecoder
@@ -78,20 +99,14 @@ actor APIClient {
 
         decoder = JSONDecoder()
         decoder.keyDecodingStrategy = .convertFromSnakeCase
-        let dateFormatter = ISO8601DateFormatter()
-        dateFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        let fallbackFormatter = ISO8601DateFormatter()
-        fallbackFormatter.formatOptions = [.withInternetDateTime]
+        let dateParser = APIDateParser()
         decoder.dateDecodingStrategy = .custom { decoder in
             let container = try decoder.singleValueContainer()
             let dateString = try container.decode(String.self)
             if dateString == "0001-01-01T00:00:00Z" {
                 return Date.distantPast
             }
-            if let date = dateFormatter.date(from: dateString) {
-                return date
-            }
-            if let date = fallbackFormatter.date(from: dateString) {
+            if let date = dateParser.date(from: dateString) {
                 return date
             }
             throw DecodingError.dataCorruptedError(in: container, debugDescription: "Cannot decode date: \(dateString)")

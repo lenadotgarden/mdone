@@ -36,6 +36,7 @@ struct ThingsMacSidebar: View {
     @State private var hovered: String?
     @State private var dropTarget: String?
     @Environment(\.colorScheme) private var scheme
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var palette: ThingsPalette { ThingsPalette(scheme) }
 
@@ -86,7 +87,8 @@ struct ThingsMacSidebar: View {
         return shell(
             route: .list(list), key: "list-" + list.rawValue, indent: 0, foldID: nil,
             movableProject: nil,
-            onDrop: { items in model.handleDrop(items, onList: list) }
+            target: .list(list),
+            dragPayload: nil
         ) {
             Image(systemName: ThingsIcons.symbol(for: kind))
                 .foregroundStyle(palette[ThingsIcons.tint(for: kind)])
@@ -114,7 +116,8 @@ struct ThingsMacSidebar: View {
             route: .project(node.id), key: "project-\(node.id)", indent: indent,
             foldID: node.hasChildren ? node.id : nil,
             movableProject: node.project,
-            onDrop: { items in model.handleDrop(items, onProject: node.id) }
+            target: .project(node.id),
+            dragPayload: .project(node.id)
         ) {
             if node.isArea {
                 Image(systemName: ThingsIcons.area)
@@ -132,7 +135,6 @@ struct ThingsMacSidebar: View {
             }
             Spacer(minLength: 0)
         }
-        .draggable(ThingsDragPayload.project(node.id).encoded)
         .contextMenu {
             Button(String(localized: "Move...")) { model.projectMoveRequest = node.id }
             if node.hasChildren {
@@ -151,7 +153,8 @@ struct ThingsMacSidebar: View {
         indent: CGFloat,
         foldID: Int64?,
         movableProject: Project?,
-        onDrop: @escaping ([String]) -> Bool,
+        target: ThingsDropTarget,
+        dragPayload: ThingsDragPayload?,
         @ViewBuilder content: () -> Content
     ) -> some View {
         let isSelected = model.route == route
@@ -181,21 +184,27 @@ struct ThingsMacSidebar: View {
                 hovered = nil
             }
         }
-        .dropDestination(for: String.self) { items, _ in
-            onDrop(items)
-        } isTargeted: { targeted in
-            if targeted {
-                dropTarget = key
-            } else if dropTarget == key {
-                dropTarget = nil
-            }
-        }
+        .animation(ThingsMotion.resolved(ThingsMotion.dropTargetHighlight, reduceMotion: reduceMotion), value: isDropTarget)
+        .modifier(ThingsSidebarDragSource(payload: dragPayload))
+        .onDrop(of: ThingsDragItem.contentTypes, delegate: ThingsSidebarDropDelegate(
+            targeted: $dropTarget,
+            key: key,
+            accepts: { acceptsDrop(on: target) },
+            perform: { payload in model.handleDrop(payload, on: target) }
+        ))
         .popover(isPresented: moveBinding(for: movableProject), arrowEdge: .trailing) {
             if let project = movableProject {
                 ThingsMacProjectMovePopover(project: project, model: model, onClose: { model.projectMoveRequest = nil })
             }
         }
         .accessibilityAddTraits(.isButton)
+    }
+
+    /// Whether the payload being dragged may be dropped on `target`: the highlight shows
+    /// only then.
+    private func acceptsDrop(on target: ThingsDropTarget) -> Bool {
+        guard let payload = ThingsDragSession.shared.payload else { return false }
+        return model.dropAction(for: payload, on: target) != nil
     }
 
     private func chevron(foldID: Int64, visible: Bool) -> some View {

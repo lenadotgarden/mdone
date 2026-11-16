@@ -186,18 +186,18 @@ struct ThingsMacProjectScreen: View {
         let logged = loggedRows(now: now, calendar: calendar)
         let hasLater = !upcoming.isEmpty || !someday.isEmpty
 
-        var sections = [ThingsMacSectionData(id: "project.\(projectID)", header: nil, rows: main)]
+        var sections = [ThingsMacSectionData(id: ThingsSectionID.project(projectID), header: nil, rows: main)]
         if showsLater {
             if !upcoming.isEmpty {
                 sections.append(ThingsMacSectionData(
-                    id: "project.\(projectID).upcoming",
+                    id: ThingsSectionID.projectUpcoming(projectID),
                     header: .icon(title: String(localized: "Upcoming"), symbolName: ThingsIcons.upcoming, tint: .upcomingRed),
                     rows: upcoming
                 ))
             }
             if !someday.isEmpty {
                 sections.append(ThingsMacSectionData(
-                    id: "project.\(projectID).someday",
+                    id: ThingsSectionID.projectSomeday(projectID),
                     header: .icon(title: String(localized: "Someday"), symbolName: ThingsIcons.someday, tint: .somedayTan),
                     rows: someday
                 ))
@@ -205,7 +205,7 @@ struct ThingsMacProjectScreen: View {
         }
         if showsLogged && !logged.isEmpty {
             sections.append(ThingsMacSectionData(
-                id: "project.\(projectID).logged", header: nil, rows: logged, allowsReorder: false
+                id: ThingsSectionID.projectLogged(projectID), header: nil, rows: logged, allowsReorder: false
             ))
         }
         return ScreenData(sections: sections, hasLater: hasLater, loggedCount: logged.count)
@@ -230,7 +230,7 @@ struct ThingsMacProjectScreen: View {
             .filter { $0.projectId == projectID && $0.done }
             .sorted { $0.id > $1.id }
         if finished.isEmpty { return [] }
-        let section = ThingsListSection(id: "project.\(projectID).logged", kind: .normal, tasks: finished)
+        let section = ThingsListSection(id: ThingsSectionID.projectLogged(projectID), kind: .normal, tasks: finished)
         let mapped = ThingsRowMapper.displaySections(
             [section], list: nil, pendingDone: [], now: now, calendar: calendar
         )

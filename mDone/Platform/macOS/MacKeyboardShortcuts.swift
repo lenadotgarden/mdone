@@ -49,7 +49,7 @@ struct MacQuickAddSheet: View {
     @State private var priority: Int64 = 0
     @FocusState private var titleFocused: Bool
 
-    /// Smart parsing (#215). Off by default. When on, typing fills the
+    /// Smart parsing (#215). On by default. When on, typing fills the
     /// pickers below rather than adding controls of its own, so the user
     /// sees the result before pressing Add.
     @AppStorage(SmartParsingPreference.storageKey) private var smartParsing = SmartParsingPreference.defaultValue

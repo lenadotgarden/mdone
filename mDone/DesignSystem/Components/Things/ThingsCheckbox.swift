@@ -9,7 +9,7 @@ enum ThingsCheckboxState: Equatable {
 
     var accessibilityValue: LocalizedStringKey {
         switch self {
-        case .open: return "Open"
+        case .open: return "Incomplete"
         case .inProgress: return "In progress"
         case .done: return "Completed"
         case .cancelled: return "Canceled"

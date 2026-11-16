@@ -216,14 +216,28 @@ enum ThingsMetrics {
         static let urgentThresholdDays: Int = 0
     }
 
-    /// Drag reorder on the Mac list.
+    /// Drag and drop on the Mac list (docs/things-spec/08-drag-and-drop.md).
     enum Reorder {
-        /// Distance before a press becomes a drag.
-        static let minimumDistance: CGFloat = 5
-        /// Shadow under the lifted row.
+        /// Height of the gap that opens when the height of the dragged row is not known.
+        /// ESTIMATED: a one line Mac row.
+        static let fallbackGapHeight: CGFloat = 38
+        /// Shadow under the drag image of a to-do.
         static let liftShadowRadius: CGFloat = 10
         static let liftShadowOffsetY: CGFloat = 4
         /// Thickness of the accent insertion line shown at the drop slot.
         static let insertionLineThickness: CGFloat = 2
+    }
+
+    /// Mac sidebar rows and groups (docs/things-spec/WIRING-AGENT1.md section 3).
+    /// The selected-row fill is `ThingsColorToken.bgSidebarSelection`.
+    enum Sidebar {
+        /// Gap between the groups (lists, loose projects, each Area).
+        static let groupGap: CGFloat = Spacing.l
+        /// Corner radius of the selected-row highlight.
+        static let selectionCornerRadius: CGFloat = 6
+        /// Extra indent per tree level below the first project level.
+        static let levelIndent: CGFloat = Spacing.l
+        /// Width reserved for the fold chevron of an Area or a parent project.
+        static let chevronWidth: CGFloat = 10
     }
 }

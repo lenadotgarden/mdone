@@ -14,7 +14,8 @@ import Foundation
 
 /// What a move does: the task, the position to send, and the section in its new order.
 struct ThingsReorderPlan: Equatable {
-    /// The section the move happens in (moves never leave a section).
+    /// The section the move happens in (a move into another section is a
+    /// `ThingsSectionMovePlan`, see ThingsDropPlan.swift).
     let sectionID: String
     let task: VTask
     let position: Double
@@ -99,5 +100,20 @@ extension ThingsListViewModel {
     @discardableResult
     func commitReorder(_ plan: ThingsReorderPlan, appState: AppState) async -> Bool {
         await appState.moveTask(plan.task, toPosition: plan.position)
+    }
+
+    /// Runs the plan of a drop. A move into another section first changes the When of the
+    /// to-do (`schedule`: start date and reserved labels), then sends its position among
+    /// the to-dos of the target section. Returns true when the position was saved.
+    @MainActor
+    @discardableResult
+    func commitDrop(_ plan: ThingsDropPlan, appState: AppState) async -> Bool {
+        switch plan {
+        case .reorder(let reorder):
+            return await commitReorder(reorder, appState: appState)
+        case .changeSection(let move):
+            await schedule(move.task, when: move.when)
+            return await appState.moveTask(move.task, toPosition: move.position)
+        }
     }
 }

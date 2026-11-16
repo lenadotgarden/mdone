@@ -1,10 +1,12 @@
 import Foundation
 
-/// The "Smart parsing in quick add" setting (#215). Off by default: with it
-/// off, the quick-add bar creates the title verbatim, exactly as before.
+/// The "Smart parsing in quick add" setting (#215). On by default, for the
+/// quick-add bar, Siri and the Things interface alike: a missing key means ON.
+/// Switching it off in Settings makes every entry point create the title
+/// verbatim.
 enum SmartParsingPreference {
     static let storageKey = "smartQuickAddParsing"
-    static let defaultValue = false
+    static let defaultValue = true
 
     static func isEnabled(defaults: UserDefaults = .standard) -> Bool {
         defaults.object(forKey: storageKey) as? Bool ?? defaultValue

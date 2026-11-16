@@ -102,7 +102,7 @@ Steps to test:
    - Sort a project by "Manual" (sort menu) and drag the handles to reorder tasks.
    - Add a widget from the home screen (long press > Edit Home Screen > tap +).
    - Open Settings > Tasks and set "Default project", then add a task from the Inbox to see it land there.
-   - Turn on Settings > Tasks > "Smart parsing in quick add", then type "Call the dentist tomorrow at 3pm !3" in the Inbox's add-task field. Chips for the date and priority appear under the field before you add it.
+   - Check Settings > Tasks > "Smart parsing in quick add" is on (it is by default), then type "Call the dentist tomorrow at 3pm !3" in the Inbox's add-task field. Chips for the date and priority appear under the field before you add it.
    - Turn on Settings > Teams > "Team features", open a task and tap "Assign" in its Assignees section. Pick yourself from the list: the task row now shows your initials, and the advanced filter offers "Assigned to me". (Only people a project is shared with in Vikunja can be assigned, so on this test account the list holds just the review user.)
    - Open a task and tap the share button (or long-press a task and choose "Copy Link") to share a link to it on the Vikunja server.
    - Say "Hey Siri, add a task in mDone" (the app can be closed). Siri asks for the task, adds it to the first project, and reads back where it went and when it is due. On a Mac, use the Shortcuts app's "Add Task" action for mDone.
@@ -177,7 +177,7 @@ Type a task the way you would say it.
 
 - New smart parsing for quick add. Type "Buy milk tomorrow at 5pm +Home !2 *shopping" and mDone files "Buy milk" in Home, due tomorrow at 5:00 PM, priority 2, labelled shopping.
 - Each part mDone picks up shows as a chip under the field before you add the task. Tap a chip's X to keep those words in the title instead.
-- Off by default: switch it on in Settings > Tasks > "Smart parsing in quick add".
+- On by default: switch it off in Settings > Tasks > "Smart parsing in quick add".
 - On the Mac, the New Task window fills in the project, due date and priority as you type.
 - Siri and Shortcuts understand it too: say a date, a project or a priority and the task lands where you meant.
 - Understands Chinese dates as well, such as 明天下午3点 or 下周.

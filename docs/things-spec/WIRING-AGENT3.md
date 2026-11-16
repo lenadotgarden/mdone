@@ -35,13 +35,13 @@ All paths call `ThingsListViewModel.quickAdd(title:when:)` or `quickAdd(title:in
 - iPhone: Magic Plus opens `ThingsInlineAddRow` (preview under the field), finish calls `quickAdd`.
 - Mac inline new to-do: `ThingsMacTodoList` shows `ThingsInlineAddRow`, `ThingsMacModel.finishAdding` calls `quickAdd`.
 - Mac Quick Entry panel: preview under the title, save calls `quickAdd` on the Inbox list.
-- `ThingsMagicPlusButton.swift` is unchanged (it only opens the row).
+- `ThingsMagicPlusButton.swift` is unchanged in behaviour (it only opens the row); it now lives in `DesignSystem/Components/Things`.
 
 `naturalLanguagePlan(for:)` returns nil when the preference is off or the text names nothing: then the old path creates the typed title verbatim.
 
 ## Preference
 
-The switch is `SmartParsingPreference.storageKey` ("Smart parsing" in Settings). The old quick-add bar defaults to OFF. In the Things interface a missing key means ON (`ThingsNaturalLanguagePreference.defaultValue`), because natural language was asked for. Consequence: Settings shows the switch off until the user touches it, while Things already parses. Fix when convenient: set `SmartParsingPreference.defaultValue = true` (Core/Preferences, not owned here; check `SmartParsingPreferenceTests` and the old `QuickAddBar` tests first) and delete `ThingsNaturalLanguagePreference`.
+The switch is `SmartParsingPreference.storageKey` ("Smart parsing" in Settings). It is ON by default everywhere (`SmartParsingPreference.defaultValue == true`, since agent B). `ThingsNaturalLanguagePreference` no longer exists.
 
 ## Syntax (case-insensitive)
 
@@ -68,7 +68,7 @@ Quick Find is now an overlay card (not a sheet) in `ThingsMacSheets`. Results: d
 
 - `ThingsMacModel.showQuickFind` and `listFocusToken` are used as they are. No new field was added to `ThingsMacModel`; the typed characters travel in `ThingsQuickFindSeed.shared`.
 - `ThingsMacCommands` could add a menu item for Quick Find that sets `showQuickFind` (already there).
-- Localizable.xcstrings (not edited): new keys `To-Dos`, `Projects and Areas`, `Tags`, `Deadline`, `Priority`, `Tomorrow`, `Someday`, `This Evening`, `No to-dos with this tag`. They fall back to English until translated.
+- Localizable.xcstrings: those keys now have French (see docs/localization.md).
 
 ## DEVIATIONS.md rows to merge (file is shared, not edited here)
 

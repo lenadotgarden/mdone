@@ -568,7 +568,7 @@ extension ThingsNaturalLanguagePlan {
         }
         if let deadline = deadline {
             let day = Self.dayText(deadline, locale: locale, calendar: calendar)
-            chips.append(ThingsNaturalLanguageChip(kind: .deadline, text: String(localized: "Deadline") + " " + day))
+            chips.append(ThingsNaturalLanguageChip(kind: .deadline, text: String(localized: "Deadline \(day)")))
         }
         if let repeatRule = repeatRule,
            let recurrence = TaskRecurrence(repeatAfter: repeatRule.repeatAfter, repeatMode: repeatRule.repeatMode)
@@ -582,7 +582,7 @@ extension ThingsNaturalLanguagePlan {
             chips.append(ThingsNaturalLanguageChip(kind: .tag, text: name))
         }
         if priority > 0 {
-            chips.append(ThingsNaturalLanguageChip(kind: .priority, text: String(localized: "Priority") + " \(priority)"))
+            chips.append(ThingsNaturalLanguageChip(kind: .priority, text: String(localized: "Priority \(priority)")))
         }
         if let estimateSeconds = estimateSeconds {
             chips.append(ThingsNaturalLanguageChip(kind: .estimate, text: Self.estimateText(estimateSeconds)))
@@ -626,8 +626,8 @@ extension ThingsNaturalLanguagePlan {
         let totalMinutes = max(1, Int((seconds / 60).rounded()))
         let hours = totalMinutes / 60
         let minutes = totalMinutes % 60
-        if hours == 0 { return "\(minutes) min" }
-        if minutes == 0 { return "\(hours) h" }
-        return "\(hours) h \(minutes)"
+        if hours == 0 { return String(localized: "\(minutes) min") }
+        if minutes == 0 { return String(localized: "\(hours) h") }
+        return String(localized: "\(hours) h \(minutes)")
     }
 }

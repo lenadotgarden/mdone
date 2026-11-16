@@ -27,6 +27,7 @@ Règle d'or : les valeurs en pixels, hex et durées de 01 sont des estimations `
 | 05-macos-shortcuts.md | table complète des raccourcis clavier Mac (vérifiée) |
 | 06-behaviors-rules.md | règles sémantiques (listes, dates, répétition, Logbook, tags, textes vides) |
 | 07-vikunja-mapping.md | correspondance concepts Things vers Vikunja v2, écarts, conventions |
+| 08-drag-and-drop.md | modèle du glisser-déposer Mac : payload, slot d'insertion, plans, sidebar, accessibilité |
 
 ## Sources
 

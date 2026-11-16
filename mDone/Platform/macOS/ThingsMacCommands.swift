@@ -155,7 +155,7 @@ private struct ThingsGoMenuItems: View {
         Divider()
         ForEach(ThingsShortcutTable.goCommands, id: \.self) { command in
             if let list = ThingsShortcutTable.list(for: command) {
-                ThingsCommandButton(id: command, title: String(localized: "Go to ") + list.title, model: model) {
+                ThingsCommandButton(id: command, title: String(localized: "Go to \(list.title)"), model: model) {
                     $0.navigate(to: .list(list))
                 }
             }

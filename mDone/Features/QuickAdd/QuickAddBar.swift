@@ -27,7 +27,7 @@ struct QuickAddBar: View {
     /// Debounce token — only the latest keystroke's task computes a suggestion.
     @State private var debounceTask: Task<Void, Never>?
 
-    /// Smart parsing (#215). Off by default; with it off nothing below runs
+    /// Smart parsing (#215). On by default; with it off nothing below runs
     /// and the bar creates the title verbatim.
     @AppStorage(SmartParsingPreference.storageKey) private var smartParsing = SmartParsingPreference.defaultValue
     /// The latest parse of `title`, shown as chips under the field.

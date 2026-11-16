@@ -1,26 +1,15 @@
 import Foundation
 
-/// The "Smart parsing" switch (`SmartParsingPreference`) as the Things
-/// interface reads it. Léna asked for natural language in Things, so here a
-/// missing key means ON, where the old quick-add bar defaults to off. Once the
-/// user flips the switch in Settings the stored value wins on both screens.
-enum ThingsNaturalLanguagePreference {
-    static let defaultValue = true
-
-    static func isEnabled(defaults: UserDefaults = .standard) -> Bool {
-        defaults.object(forKey: SmartParsingPreference.storageKey) as? Bool ?? defaultValue
-    }
-}
-
 extension ThingsNaturalLanguage {
     /// The mapper fed with the projects and tags the app has loaded, the
-    /// current clock and the user's preference.
+    /// current clock and the user's preference (`SmartParsingPreference`,
+    /// on by default).
     @MainActor
     static func current(appState: AppState, now: Date = Date()) -> ThingsNaturalLanguage {
         ThingsNaturalLanguage(
             projectModels: appState.projects,
             labelModels: appState.labels,
-            isEnabled: ThingsNaturalLanguagePreference.isEnabled(),
+            isEnabled: SmartParsingPreference.isEnabled(),
             now: now,
             calendar: Calendar.app
         )

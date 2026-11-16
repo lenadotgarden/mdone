@@ -16,8 +16,11 @@ enum ThingsMotion {
     static let expand: Animation = .spring(response: 0.35, dampingFraction: 0.85)
     /// Card shadow fade.
     static let shadowFade: Animation = .easeInOut(duration: 0.2)
-    /// Drag reorder: the rows that make room and the drop.
+    /// Drag reorder: the rows that make room (the insertion gap opens and closes with it)
+    /// and the drop.
     static let reorder: Animation = .spring(response: 0.28, dampingFraction: 0.8)
+    /// Highlight of a sidebar row while a to-do or project is dragged over it.
+    static let dropTargetHighlight: Animation = .easeOut(duration: 0.12)
     /// Keyboard swap (Cmd Opt arrows): a little firmer than a drag.
     static let reorderSwap: Animation = .spring(response: 0.26, dampingFraction: 0.82)
     /// Scale of a lifted row while dragging.

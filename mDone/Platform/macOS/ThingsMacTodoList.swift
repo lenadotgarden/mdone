@@ -12,8 +12,9 @@ struct ThingsMacSectionData: Identifiable {
     var allowsReorder: Bool = true
 }
 
-/// Where the rows were laid out, read by the drag to find its drop slot. A class
-/// held in `@State`, so updating it during scrolling does not redraw the list.
+
+/// Where the rows were laid out, read by the drop delegate to find the insertion slot. A
+/// class held in `@State`, so updating it during scrolling does not redraw the list.
 private final class ThingsRowFrameStore {
     var frames: [Int64: CGRect] = [:]
 }
@@ -26,28 +27,31 @@ private struct ThingsRowFramesKey: PreferenceKey {
     }
 }
 
-/// A row being dragged with the mouse.
-private struct ThingsRowDrag: Equatable {
-    let id: Int64
-    let sectionID: String
-    /// Index of the row in its section when the drag began.
-    let fromIndex: Int
-    /// Vertical distance the pointer travelled.
-    var translation: CGFloat
-    /// Index the row would land at (in the list without the dragged row).
-    var targetIndex: Int
+/// What the list shows while a to-do hovers over it: the insertion slot, where the
+/// dragged row comes from, and the height of the gap.
+private struct ThingsDropVisual {
+    let sourceID: Int64
+    let source: ThingsDropSource
+    let slot: ThingsDropSlot
+    let rowHeight: CGFloat
 }
 
 /// The scrolling list shared by the Mac list and project screens (spec 04
-/// sections 1 to 3, 10, 11, 05 "Selectionner" and "Deplacer"):
+/// sections 1 to 3, 10, 11, 05 "Selectionner" and "Deplacer", 08 drag and drop):
 ///
 /// - selection and keyboard: Up and Down move between rows across sections, Opt
 ///   jumps to the first or last, Return opens the card, Esc clears the
 ///   selection, Delete asks to delete, Space is swallowed;
-/// - reordering: dragging a row lifts it (scale, shadow) while the others slide
-///   apart to open the drop slot; Cmd Opt Up and Cmd Opt Down (also Cmd Up and
-///   Cmd Down) swap the selected to-do with its neighbour with the same spring;
-///   the order is saved through `ThingsReorder` and `AppState.moveTask`;
+/// - drag and drop: every row is a system drag source (`onDrag`, payload
+///   `ThingsDragPayload.todo`), so it can be dropped on a sidebar row as well as inside
+///   the list. The list is one `DropDelegate`: while a to-do hovers, the insertion slot
+///   follows the pointer and the rows slide apart to open a gap; a drop saves the order
+///   through `ThingsDropPlan`, `ThingsListViewModel.commitDrop` and `AppState.moveTask`.
+///   Today and project screens also accept a drop in another section where it means
+///   something (This Evening, Someday), see `ThingsDropRules`;
+/// - Cmd Opt Up and Cmd Opt Down (also Cmd Up and Cmd Down) swap the selected to-do with
+///   its neighbour with the same spring, and the accessibility actions Move Up, Move Down
+///   and Move to <section> do the same without a pointer;
 /// - the open card replaces its row, a context menu.
 struct ThingsMacTodoList: View {
     let sections: [ThingsMacSectionData]
@@ -60,7 +64,7 @@ struct ThingsMacTodoList: View {
     @FocusState private var listFocused: Bool
     @State private var orderOverride: [String: [Int64]] = [:]
     @State private var inflight: [String: Int] = [:]
-    @State private var drag: ThingsRowDrag?
+    @State private var dropSlot: ThingsDropSlot?
     @State private var frameStore = ThingsRowFrameStore()
     @Environment(\.colorScheme) private var scheme
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -83,23 +87,33 @@ struct ThingsMacTodoList: View {
         self.trailing = trailing
     }
 
-    /// The sections with the order the user just gave them, until the server answers.
+    /// The sections with the order the user just gave them, until the server answers. A
+    /// titled section a to-do just left empty is dropped (its header would hang alone).
     private var shownSections: [ThingsMacSectionData] {
-        sections.map { section in
-            guard let order = orderOverride[section.id] else { return section }
-            return ThingsMacSectionData(
+        if orderOverride.isEmpty { return sections }
+        let arranged = ThingsDropArrangement.rows(
+            for: sections.map { (id: $0.id, rows: $0.rows) },
+            overrides: orderOverride
+        )
+        var result: [ThingsMacSectionData] = []
+        for (index, section) in sections.enumerated() {
+            let rows = arranged[index]
+            if rows.isEmpty && !section.rows.isEmpty && section.header != nil { continue }
+            result.append(ThingsMacSectionData(
                 id: section.id,
                 header: section.header,
-                rows: ThingsReorder.ordered(section.rows, by: order),
+                rows: rows,
                 allowsReorder: section.allowsReorder
-            )
+            ))
         }
+        return result
     }
 
     var body: some View {
         let palette = ThingsPalette(scheme)
         let shown = shownSections
         let ids = shown.flatMap { section in section.rows.map { $0.task.id } }
+        let drop = dropVisual(in: shown)
         return ScrollViewReader { proxy in
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 0) {
@@ -111,7 +125,7 @@ struct ThingsMacTodoList: View {
                         empty
                     }
                     ForEach(shown) { section in
-                        sectionView(section)
+                        sectionView(section, drop: drop)
                     }
                     if let trailing = trailing {
                         trailing
@@ -124,6 +138,7 @@ struct ThingsMacTodoList: View {
                 }
                 .frame(maxWidth: ThingsMetrics.Layout.contentMaxWidth)
                 .frame(maxWidth: .infinity)
+                .onDrop(of: ThingsDragItem.contentTypes, delegate: dropDelegate)
                 .background(
                     Color.clear
                         .contentShape(Rectangle())
@@ -203,14 +218,14 @@ struct ThingsMacTodoList: View {
 
     /// Moves the selected to-do one place up or down inside its section, animated.
     private func moveSelected(by step: Int, proxy: ScrollViewProxy) {
-        guard let id = model.selectedTaskID, model.expandedTaskID == nil, drag == nil else { return }
+        guard let id = model.selectedTaskID, model.expandedTaskID == nil, dropSlot == nil else { return }
         for section in shownSections where section.allowsReorder {
             guard section.rows.contains(where: { $0.task.id == id }) else { continue }
             let tasks = section.rows.map { $0.task }
             guard let plan = ThingsReorder.plan(sectionID: section.id, tasks: tasks, movingID: id, by: step) else {
                 return
             }
-            apply(plan, animation: ThingsMotion.reorderSwap)
+            apply(.reorder(plan), animation: ThingsMotion.reorderSwap)
             withAnimation(ThingsMotion.resolved(ThingsMotion.reorderSwap, reduceMotion: reduceMotion)) {
                 proxy.scrollTo(id)
             }
@@ -219,18 +234,23 @@ struct ThingsMacTodoList: View {
     }
 
     /// Shows the new order at once, then saves it. The shown order stays until the last
-    /// request of the section has finished and the server order is back.
-    private func apply(_ plan: ThingsReorderPlan, animation: Animation) {
+    /// request of every section the plan touches has finished and the server order is
+    /// back; if the save failed the rows then slide back to where they were (rollback).
+    private func apply(_ plan: ThingsDropPlan, animation: Animation) {
+        let overrides = plan.overrides
         withAnimation(ThingsMotion.resolved(animation, reduceMotion: reduceMotion)) {
-            orderOverride[plan.sectionID] = plan.reorderedIDs
-            inflight[plan.sectionID, default: 0] += 1
-            drag = nil
+            for (sectionID, order) in overrides {
+                orderOverride[sectionID] = order
+                inflight[sectionID, default: 0] += 1
+            }
+            dropSlot = nil
         }
         let listModel = viewModel
         let state = model.appState
+        let touched = Array(overrides.keys)
         Task { @MainActor in
-            _ = await listModel.commitReorder(plan, appState: state)
-            finishReorder(sectionID: plan.sectionID)
+            _ = await listModel.commitDrop(plan, appState: state)
+            for sectionID in touched { finishReorder(sectionID: sectionID) }
         }
     }
 
@@ -246,95 +266,111 @@ struct ThingsMacTodoList: View {
         }
     }
 
-    private func dragGesture(for row: ThingsDisplayRow, in section: ThingsMacSectionData) -> some Gesture {
-        DragGesture(
-            minimumDistance: ThingsMetrics.Reorder.minimumDistance,
-            coordinateSpace: .named(ThingsMacTodoList.spaceName)
+    // MARK: - Drag and drop
+
+    private var dropDelegate: ThingsListDropDelegate {
+        ThingsListDropDelegate(
+            slotAt: { y in slot(atY: y) },
+            slot: $dropSlot,
+            animation: ThingsMotion.resolved(ThingsMotion.reorder, reduceMotion: reduceMotion),
+            commit: { target in commitDrop(at: target) }
         )
-        .onChanged { value in dragChanged(row, in: section, translation: value.translation.height) }
-        .onEnded { value in dragEnded(row, in: section, translation: value.translation.height) }
     }
 
-    private func dragChanged(_ row: ThingsDisplayRow, in section: ThingsMacSectionData, translation: CGFloat) {
-        guard section.allowsReorder, model.expandedTaskID == nil else { return }
-        let id = row.task.id
-        guard let from = section.rows.firstIndex(where: { $0.task.id == id }) else { return }
-        var state = drag ?? ThingsRowDrag(id: id, sectionID: section.id, fromIndex: from, translation: 0, targetIndex: from)
-        if drag == nil {
-            model.select(id)
-            listFocused = true
-            NSHapticFeedbackManager.defaultPerformer.perform(.alignment, performanceTime: .now)
-        }
-        if state.id != id { return }
-        state.translation = translation
-        state.targetIndex = targetIndex(for: state, rows: section.rows)
-        drag = state
+    /// The section a drag of `id` starts from, in the order shown.
+    private func sourceSection(of id: Int64, in shown: [ThingsMacSectionData]) -> ThingsMacSectionData? {
+        shown.first { section in section.rows.contains(where: { $0.task.id == id }) }
     }
 
-    private func dragEnded(_ row: ThingsDisplayRow, in section: ThingsMacSectionData, translation: CGFloat) {
-        guard let current = drag, current.id == row.task.id else {
-            drag = nil
-            return
+    /// The insertion slot for a pointer at height `y` of the list: only in the section of
+    /// the dragged to-do and the sections it may move to. Nil for a to-do that is not in
+    /// a reorderable section of this screen.
+    private func slot(atY y: CGFloat) -> ThingsDropSlot? {
+        guard let id = ThingsDragSession.shared.payload?.todoID else { return nil }
+        let shown = shownSections
+        guard let source = sourceSection(of: id, in: shown), source.allowsReorder else { return nil }
+        let legal = shown.filter { section in
+            section.allowsReorder
+                && (section.id == source.id || ThingsDropRules.when(from: source.id, to: section.id) != nil)
         }
-        var state = current
-        state.translation = translation
-        state.targetIndex = targetIndex(for: state, rows: section.rows)
-        let tasks = section.rows.map { $0.task }
-        let destination = ThingsReorder.destinationOffset(from: state.fromIndex, finalIndex: state.targetIndex)
-        if let plan = ThingsReorder.plan(sectionID: section.id, tasks: tasks, movingID: state.id, toOffset: destination) {
-            NSHapticFeedbackManager.defaultPerformer.perform(.alignment, performanceTime: .now)
-            apply(plan, animation: ThingsMotion.reorder)
-        } else {
-            withAnimation(ThingsMotion.resolved(ThingsMotion.reorder, reduceMotion: reduceMotion)) {
-                drag = nil
-            }
+        let layout = legal.map { section in
+            ThingsDropLayoutSection(id: section.id, rowIDs: section.rows.map { $0.task.id })
         }
+        var frames: [Int64: ThingsDropRowFrame] = [:]
+        for (rowID, rect) in frameStore.frames {
+            frames[rowID] = ThingsDropRowFrame(minY: rect.minY, maxY: rect.maxY)
+        }
+        return ThingsDropGeometry.slot(sections: layout, frames: frames, pointerY: y)
     }
 
-    /// The index the dragged row would land at: the number of other rows whose
-    /// middle is above the middle of the dragged row. Rows not laid out (lazy) count
-    /// by their place relative to the dragged row.
-    private func targetIndex(for state: ThingsRowDrag, rows: [ThingsDisplayRow]) -> Int {
-        guard let frame = frameStore.frames[state.id] else { return state.fromIndex }
-        let center = frame.midY + state.translation
-        var count = 0
-        for (index, other) in rows.enumerated() where index != state.fromIndex {
-            if let otherFrame = frameStore.frames[other.task.id] {
-                if otherFrame.midY < center { count += 1 }
-            } else if index < state.fromIndex {
-                count += 1
-            }
+    private func commitDrop(at slot: ThingsDropSlot) -> Bool {
+        guard let id = ThingsDragSession.shared.payload?.todoID else { return false }
+        let tasks = shownSections.map { section in
+            ThingsSectionTasks(id: section.id, tasks: section.rows.map { $0.task })
         }
-        return count
+        guard let plan = ThingsDropPlan.make(slot: slot, movingID: id, sections: tasks) else { return false }
+        NSHapticFeedbackManager.defaultPerformer.perform(.alignment, performanceTime: .now)
+        apply(plan, animation: ThingsMotion.reorder)
+        return true
     }
 
-    /// How far a row slides to open the drop slot of the dragged row.
-    private func shift(forRowAt index: Int, id: Int64, in section: ThingsMacSectionData) -> CGFloat {
-        guard let current = drag, current.sectionID == section.id, current.id != id,
-              let height = frameStore.frames[current.id]?.height else { return 0 }
-        if current.targetIndex > current.fromIndex && index > current.fromIndex && index <= current.targetIndex {
-            return -height
-        }
-        if current.targetIndex < current.fromIndex && index < current.fromIndex && index >= current.targetIndex {
-            return height
-        }
-        return 0
+    private func dropVisual(in shown: [ThingsMacSectionData]) -> ThingsDropVisual? {
+        guard let slot = dropSlot, let id = ThingsDragSession.shared.payload?.todoID,
+              let section = sourceSection(of: id, in: shown),
+              let index = section.rows.firstIndex(where: { $0.task.id == id }) else { return nil }
+        let height = frameStore.frames[id].map { $0.height } ?? ThingsMetrics.Reorder.fallbackGapHeight
+        return ThingsDropVisual(
+            sourceID: id,
+            source: ThingsDropSource(sectionID: section.id, index: index),
+            slot: slot,
+            rowHeight: height
+        )
+    }
+
+    /// Starts the system drag of a row: selects it and records the payload for the targets.
+    private func beginDrag(_ row: ThingsDisplayRow) -> NSItemProvider {
+        model.select(row.task.id)
+        listFocused = true
+        NSHapticFeedbackManager.defaultPerformer.perform(.alignment, performanceTime: .now)
+        return ThingsDragSession.shared.begin(.todo(row.task.id))
+    }
+
+    /// The image under the pointer: the row on a card with the lift shadow.
+    private func dragPreview(_ row: ThingsDisplayRow) -> some View {
+        let palette = ThingsPalette(scheme)
+        return ThingsTodoRow(model: row.model, isSelected: false)
+            .frame(width: frameStore.frames[row.task.id]?.width)
+            .background(
+                RoundedRectangle(cornerRadius: ThingsMetrics.Card.cornerRadius, style: .continuous)
+                    .fill(palette[.bgPrimary])
+            )
+            .shadow(
+                color: Color.black.opacity(ThingsColorOpacity.liftShadow),
+                radius: ThingsMetrics.Reorder.liftShadowRadius,
+                x: 0,
+                y: ThingsMetrics.Reorder.liftShadowOffsetY
+            )
     }
 
     // MARK: - Rows
 
     @ViewBuilder
-    private func sectionView(_ section: ThingsMacSectionData) -> some View {
+    private func sectionView(_ section: ThingsMacSectionData, drop: ThingsDropVisual?) -> some View {
         if let style = section.header {
             ThingsSectionHeader(style: style)
         }
         ForEach(Array(section.rows.enumerated()), id: \.element.id) { entry in
-            rowView(entry.element, index: entry.offset, in: section)
+            rowView(entry.element, index: entry.offset, in: section, drop: drop)
         }
     }
 
     @ViewBuilder
-    private func rowView(_ row: ThingsDisplayRow, index: Int, in section: ThingsMacSectionData) -> some View {
+    private func rowView(
+        _ row: ThingsDisplayRow,
+        index: Int,
+        in section: ThingsMacSectionData,
+        drop: ThingsDropVisual?
+    ) -> some View {
         let id = row.task.id
         if model.expandedTaskID == id {
             ThingsMacTodoEditor(
@@ -345,15 +381,32 @@ struct ThingsMacTodoList: View {
             .padding(.vertical, ThingsMetrics.Card.verticalMargin)
             .id(id)
         } else {
-            listRow(row, index: index, in: section)
+            listRow(row, index: index, in: section, drop: drop)
         }
     }
 
-    private func listRow(_ row: ThingsDisplayRow, index: Int, in section: ThingsMacSectionData) -> some View {
+    private func listRow(
+        _ row: ThingsDisplayRow,
+        index: Int,
+        in section: ThingsMacSectionData,
+        drop: ThingsDropVisual?
+    ) -> some View {
         let id = row.task.id
-        let isDragged = drag?.id == id
-        let slide = shift(forRowAt: index, id: id, in: section)
-        let offset: CGFloat = isDragged ? (drag?.translation ?? 0) : slide
+        // While a to-do hovers over the list its own row is hidden (the gap shows where it
+        // lands) and the others slide to open the gap and close the place it left. If the
+        // pointer leaves the list, `dropSlot` is nil again and the row comes back.
+        let isSource = drop?.sourceID == id
+        var slide: CGFloat = 0
+        if let drop = drop {
+            slide = ThingsDropGeometry.shift(
+                forRowAt: index,
+                in: section.id,
+                source: drop.source,
+                slot: drop.slot,
+                rowHeight: drop.rowHeight
+            )
+        }
+        let moves = ThingsDropRules.moves(from: section.id, among: sections.map { $0.id })
         return VStack(spacing: 0) {
             ThingsTodoRow(
                 model: row.model,
@@ -361,33 +414,30 @@ struct ThingsMacTodoList: View {
                 onToggle: { toggle(row.task) }
             )
             .contentShape(Rectangle())
-            .offset(y: offset)
-            .transaction { transaction in
-                // The dragged row follows the pointer without easing, and eases home on drop.
-                if isDragged { transaction.animation = nil }
-            }
-            .scaleEffect(isDragged ? ThingsMotion.liftScale : 1)
-            .shadow(
-                color: Color.black.opacity(isDragged ? ThingsColorOpacity.liftShadow : 0),
-                radius: isDragged ? ThingsMetrics.Reorder.liftShadowRadius : 0,
-                x: 0,
-                y: isDragged ? ThingsMetrics.Reorder.liftShadowOffsetY : 0
-            )
-            .animation(ThingsMotion.resolved(ThingsMotion.lift, reduceMotion: reduceMotion), value: isDragged)
+            .opacity(isSource ? 0 : 1)
+            .offset(y: slide)
             .animation(ThingsMotion.resolved(ThingsMotion.reorder, reduceMotion: reduceMotion), value: slide)
             .onTapGesture(count: 2) { model.open(id) }
             .onTapGesture {
                 model.select(id)
                 listFocused = true
             }
-            .simultaneousGesture(dragGesture(for: row, in: section))
+            .onDrag {
+                beginDrag(row)
+            } preview: {
+                dragPreview(row)
+            }
         }
         .background(frameReader(id))
-        .zIndex(isDragged ? 1 : 0)
-        .contextMenu { contextMenu(for: row.task) }
+        .contextMenu { contextMenu(for: row.task, moves: moves) }
         .id(id)
         .accessibilityAction(named: Text("Move Up")) { moveByAccessibility(id, -1) }
         .accessibilityAction(named: Text("Move Down")) { moveByAccessibility(id, 1) }
+        .accessibilityActions {
+            ForEach(moves, id: \.sectionID) { move in
+                Button(sectionMoveTitle(move.when)) { moveToSection(id, sectionID: move.sectionID) }
+            }
+        }
     }
 
     private func frameReader(_ id: Int64) -> some View {
@@ -404,9 +454,31 @@ struct ThingsMacTodoList: View {
             guard section.rows.contains(where: { $0.task.id == id }) else { continue }
             let tasks = section.rows.map { $0.task }
             if let plan = ThingsReorder.plan(sectionID: section.id, tasks: tasks, movingID: id, by: step) {
-                apply(plan, animation: ThingsMotion.reorderSwap)
+                apply(.reorder(plan), animation: ThingsMotion.reorderSwap)
             }
             return
+        }
+    }
+
+    /// Moves a to-do to the end of another section (This Evening, Today, Someday, Anytime).
+    private func moveToSection(_ id: Int64, sectionID: String) {
+        let shown = shownSections
+        guard let target = shown.first(where: { $0.id == sectionID }) else { return }
+        let slot = ThingsDropSlot(sectionID: sectionID, index: target.rows.count)
+        let tasks = shown.map { section in
+            ThingsSectionTasks(id: section.id, tasks: section.rows.map { $0.task })
+        }
+        guard let plan = ThingsDropPlan.make(slot: slot, movingID: id, sections: tasks) else { return }
+        apply(plan, animation: ThingsMotion.reorder)
+    }
+
+    private func sectionMoveTitle(_ when: ThingsWhen) -> String {
+        switch when {
+        case .thisEvening: return String(localized: "Move to This Evening")
+        case .today: return String(localized: "Move to Today")
+        case .someday: return String(localized: "Move to Someday")
+        case .none: return String(localized: "Move to Anytime")
+        case .date: return String(localized: "Move")
         }
     }
 
@@ -421,7 +493,7 @@ struct ThingsMacTodoList: View {
     }
 
     @ViewBuilder
-    private func contextMenu(for task: VTask) -> some View {
+    private func contextMenu(for task: VTask, moves: [ThingsSectionMove]) -> some View {
         Button(String(localized: "Open")) { model.open(task.id) }
         Button(String(localized: "Complete")) { viewModel.tapCheckbox(task) }
         Menu(String(localized: "When")) {
@@ -432,6 +504,9 @@ struct ThingsMacTodoList: View {
         }
         Button(String(localized: "Move Up")) { moveByAccessibility(task.id, -1) }
         Button(String(localized: "Move Down")) { moveByAccessibility(task.id, 1) }
+        ForEach(moves, id: \.sectionID) { move in
+            Button(sectionMoveTitle(move.when)) { moveToSection(task.id, sectionID: move.sectionID) }
+        }
         Button(String(localized: "Duplicate")) {
             model.select(task.id)
             model.duplicateSelected()

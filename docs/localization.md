@@ -166,6 +166,19 @@ Use `.label` for display and `.rawValue` for logic.
 - **App Store metadata**. Listing text, keywords, and screenshots are localized
   in App Store Connect, not here.
 
+## French and the Things interface
+
+The Things interface (Features/Things, Platform/*/Things*, DesignSystem/Components/Things, Domain/Mapping previews) ships with French in `mDone/Localizable.xcstrings`. Rules used:
+
+- The six list names and This Evening stay in English in the French UI. They are Things vocabulary (Inbox, Today, This Evening, Upcoming, Anytime, Someday, Logbook). The catalog still carries an explicit `fr` value for them (the same word) so they count as translated.
+- Everything else is translated: Area = Zone, Deadline = Échéance, When = Quand, Heading = En-tête, Quick Find = Recherche rapide, Quick Entry = Saisie rapide, Tomorrow = Demain, Yesterday = Hier.
+- UI labels use the infinitive or a noun, no tutoiement; spoken or hint text (empty states) is neutral.
+- A key shared with the widget extension carries `fr` in both catalogs, otherwise `scripts/localization.py import fr` would delete the app's value (the flat file merges the catalogs).
+- Counts with a plural ("Show %lld logged items") use catalog plural variations (`one`, `many`, `other` for French).
+- `scripts/check-things-localization.py` fails CI when a Things literal has no `fr` value. Preview sample data is listed in its `SKIP` set.
+
+The rest of the app (screens from before the fork) has no French yet.
+
 ## Known gaps
 
 - `DefaultDueTimePreference` renders its options as literal strings

@@ -72,9 +72,12 @@ final class SmartQuickAddTests: XCTestCase {
 
     // MARK: - Setting
 
-    func testSmartParsingIsOffByDefault() throws {
+    func testSmartParsingIsOnByDefault() throws {
         let defaults = try XCTUnwrap(UserDefaults(suiteName: #function))
         defaults.removePersistentDomain(forName: #function)
+        XCTAssertTrue(SmartParsingPreference.defaultValue)
+        XCTAssertTrue(SmartParsingPreference.isEnabled(defaults: defaults))
+        defaults.set(false, forKey: SmartParsingPreference.storageKey)
         XCTAssertFalse(SmartParsingPreference.isEnabled(defaults: defaults))
         defaults.set(true, forKey: SmartParsingPreference.storageKey)
         XCTAssertTrue(SmartParsingPreference.isEnabled(defaults: defaults))

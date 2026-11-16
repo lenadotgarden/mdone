@@ -41,3 +41,5 @@ Side effect of the rule: moving the last child out of an unmarked Area turns it 
 ## 5. Behaviour of Shift Cmd M
 
 `ThingsMacModel.requestMove()` (menu item Items > Move...): a selected to-do opens its card and the Move popover (existing path); with no selected to-do and a project or Area on screen, the popover opens in the sidebar, anchored on that row (`projectMoveRequest`). It needs the sidebar visible.
+
+> Obsolete (voir `08-drag-and-drop.md`) : le point 1 est fait, mais par `onDrag` et `ThingsDragItem.provider(for:)` au lieu de `.draggable`, pour que toutes les sources et cibles partagent le meme payload et la meme session.
