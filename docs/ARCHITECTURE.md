@@ -7,7 +7,7 @@ Détails et justifications : `docs/architecture-audit/`. Spécification visuelle
 
 Client natif iOS et macOS pour un serveur Vikunja, dont l'interface reproduit Things 3 écran par écran, geste par geste, raccourci par raccourci. Les fonctions d'mDone absentes de Things (langage naturel, focus, calendrier amélioré, kanban, durée estimée, retard, priorités) sont ajoutées ensuite, dans le style Things.
 
-Nom de travail : **Sprout** (affichage uniquement, `MDONE_DISPLAY_NAME` dans `project.yml`). Le module Swift et les cibles gardent le nom `mDone` pour limiter le bruit de fusion avec l'amont.
+Nom : on garde **mDone** (aucun nom inventé). Le nom affiché se change plus tard via `MDONE_DISPLAY_NAME` dans `project.yml`. Côté données, on reprend les noms de Vikunja (projets, labels, buckets, tâches) et les labels réservés restent minimaux.
 
 ## Règles non négociables
 
