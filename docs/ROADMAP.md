@@ -4,8 +4,8 @@ Statut : `[ ]` à faire, `[~]` en cours, `[x]` fait. Chaque jalon est validé pa
 
 ## Phase 0 - Fondations
 - [x] Fork, spec Things (`docs/things-spec/`), audit (`docs/architecture-audit/`)
-- [~] ARCHITECTURE.md, CI de compilation rapide, script de couches
-- [ ] Étapes 1 à 4 du plan de déplacement (mécaniques)
+- [x] ARCHITECTURE.md, CI de compilation rapide (ci-build.yml), script de couches
+- [x] Étapes 1 à 4 du plan de déplacement (CI iOS + macOS verte sur f858e26)
 - [ ] Étapes 5 à 9 (Domain extrait, AppState éclaté, préférences typées)
 
 ## Phase 1 - Domain Things (testé en CI, sans UI)
