@@ -6,6 +6,9 @@ struct mDoneApp: App {
     private let dependencies: AppDependencies
     @State private var appState: AppState
     @Environment(\.scenePhase) private var scenePhase
+    /// Shows the Things-style interface instead of the tab bar on iPhone. The
+    /// Settings row "Interface Things" turns it off (docs/things-spec/DEVIATIONS.md).
+    @AppStorage("thingsUIEnabled") private var thingsUIEnabled = true
     #if os(iOS)
     @State private var focusManager: FocusManager
     private let focusOutbox: FocusOutboxService
@@ -59,7 +62,11 @@ struct mDoneApp: App {
         Group {
             if appState.isAuthenticated {
                 #if os(iOS)
-                MainTabView()
+                if thingsUIEnabled {
+                    ThingsRootView()
+                } else {
+                    MainTabView()
+                }
                 #else
                 MacContentView()
                 #endif

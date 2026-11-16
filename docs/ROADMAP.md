@@ -15,12 +15,12 @@ Statut : `[ ]` à faire, `[~]` en cours, `[x]` fait. Chaque jalon est validé pa
 
 ## Phase 2 - DesignSystem
 - [~] Tokens (valeurs à calibrer sur captures réelles)
-- [~] Composants écrits, previews à valider, Magic Plus à faire
+- [~] Composants écrits, previews à valider, Magic Plus (tap seulement, écrit, non validé par la CI)
 
 ## Phase 3 - iPhone
-- [ ] Home, Today, Upcoming, Anytime, Someday, Logbook, Area, Project
+- [~] Home, Today, Upcoming, Anytime, Someday, Logbook, Area, Project (première tranche écrite sans compilateur, non validée par la CI : écran de liste générique, Home, projet/area à plat sans headings)
 - [ ] To-do déployé, pickers When/Deadline/Tags, Move, Quick Find
-- [ ] Gestes (swipe, drag, Magic Plus, secousse), multi-sélection
+- [~] Gestes : swipe droit When, tap Magic Plus, secousse (undo) faits ; drag, Magic Plus glissé, multi-sélection restent à faire
 
 ## Phase 4 - Mac
 - [ ] Fenêtre, sidebar, listes, éditeur déployé

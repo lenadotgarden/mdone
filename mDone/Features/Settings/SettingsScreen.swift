@@ -23,6 +23,9 @@ struct SettingsScreen: View {
     @AppStorage(ProjectViewPreference.defaultStorageKey) private var defaultProjectView = ProjectViewPreference
         .fallback.rawValue
     #endif
+    #if os(iOS)
+    @AppStorage("thingsUIEnabled") private var thingsUIEnabled = true
+    #endif
     @State private var showLogoutConfirm = false
     @State private var showAbout = false
 
@@ -134,6 +137,14 @@ struct SettingsScreen: View {
                     "For projects you share with other people in Vikunja. Shows who each task is assigned to, lets you assign people when adding or editing a task, and adds an Assigned to me filter. Leave it off if you use mDone on your own."
                 )
             }
+
+            #if os(iOS)
+            Section {
+                Toggle("Interface Things", isOn: $thingsUIEnabled)
+            } footer: {
+                Text("Shows the Things-style Home and lists instead of the tab bar. Turn it off to go back to the classic interface.")
+            }
+            #endif
 
             Section {
                 Toggle("Calm Mode", isOn: $calmMode)
