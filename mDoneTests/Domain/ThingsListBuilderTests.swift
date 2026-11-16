@@ -113,7 +113,7 @@ final class ThingsListBuilderTests: XCTestCase {
             makeTask(id: 4, project: inboxID, labels: ["things:someday"]),
             makeTask(id: 5, project: inboxID, labels: ["things:evening"]),
             makeTask(id: 6, project: otherID),
-            makeTask(id: 7, done: true, project: inboxID),
+            makeTask(id: 7, project: inboxID, done: true),
         ]
         XCTAssertEqual(ids(sections(.inbox, tasks)), [1, 2])
     }
@@ -410,7 +410,7 @@ final class ThingsListBuilderTests: XCTestCase {
     func testDoneTasksAppearOnlyInLogbook() {
         let day = date(2026, 11, 16, in: utc)
         let tasks = [
-            makeTask(id: 1, done: true, project: inboxID),
+            makeTask(id: 1, project: inboxID, done: true),
             makeTask(id: 2, done: true, start: day),
             makeTask(id: 3, done: true, due: day),
             makeTask(id: 4, done: true, start: date(2026, 11, 20, in: utc)),
