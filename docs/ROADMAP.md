@@ -23,9 +23,9 @@ Statut : `[ ]` à faire, `[~]` en cours, `[x]` fait. Chaque jalon est validé pa
 - [~] Gestes : swipe droit When, tap Magic Plus, secousse (undo) faits ; drag, Magic Plus glissé, multi-sélection restent à faire
 
 ## Phase 4 - Mac
-- [ ] Fenêtre, sidebar, listes, éditeur déployé
-- [ ] Quick Entry (global), Quick Find, Type Travel
-- [ ] Tous les raccourcis (`docs/things-spec/05-macos-shortcuts.md`)
+- [~] Fenêtre, sidebar, listes, éditeur déployé (première tranche écrite sans compilateur, non validée par la CI ni sur un Mac : `ThingsMacRootView`, sidebar, listes, projet/area plat, éditeur en place, popovers When, Deadline, Tags, Move)
+- [~] Quick Entry (panneau et moniteur global sous réserve d accès Accessibilité), Quick Find (feuille) écrits, non validés ; Type Travel à faire
+- [~] Raccourcis : table testée (`ThingsShortcutTable`), commandes de menu écrites, non validées sur un Mac ; reste listé dans DEVIATIONS.md
 
 ## Phase 5 - Fonctions mDone dans le style Things
 - [ ] Langage naturel, focus, retard, durée estimée, calendrier amélioré, kanban, widgets, Siri

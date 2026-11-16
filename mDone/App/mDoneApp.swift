@@ -6,8 +6,9 @@ struct mDoneApp: App {
     private let dependencies: AppDependencies
     @State private var appState: AppState
     @Environment(\.scenePhase) private var scenePhase
-    /// Shows the Things-style interface instead of the tab bar on iPhone. The
-    /// Settings row "Interface Things" turns it off (docs/things-spec/DEVIATIONS.md).
+    /// Shows the Things-style interface instead of the tab bar on iPhone and
+    /// the classic window on Mac. The Settings row "Interface Things" turns it
+    /// off (docs/things-spec/DEVIATIONS.md).
     @AppStorage("thingsUIEnabled") private var thingsUIEnabled = true
     #if os(iOS)
     @State private var focusManager: FocusManager
@@ -55,6 +56,13 @@ struct mDoneApp: App {
                 appContent
             }
         }
+        #if os(macOS)
+        .commands {
+            // The Things menus and shortcuts. Their items are disabled while
+            // the classic Mac interface is shown (no focused ThingsMacModel).
+            ThingsMacCommands()
+        }
+        #endif
     }
 
     @ViewBuilder
@@ -68,7 +76,11 @@ struct mDoneApp: App {
                     MainTabView()
                 }
                 #else
-                MacContentView()
+                if thingsUIEnabled {
+                    ThingsMacRootView(appState: appState)
+                } else {
+                    MacContentView()
+                }
                 #endif
             } else {
                 ServerSetupView()

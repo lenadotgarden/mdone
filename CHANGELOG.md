@@ -7,6 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- Mac: a Things-style window (sidebar with lists, projects and Areas, to-dos that open in place, When, Deadline, Tags and Move popovers, Quick Find, a Quick Entry panel) with the Things keyboard shortcuts. It is on by default and can be turned off with "Interface Things" in Settings.
 - Signing in to a Vikunja server that uses LDAP or Active Directory is now spelled out on the sign-in screen. When the server signs people in through a directory, the hint under the form says to use the username and password from that directory (#156).
 
 ### Changed

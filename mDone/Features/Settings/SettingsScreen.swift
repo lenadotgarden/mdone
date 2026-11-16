@@ -23,9 +23,7 @@ struct SettingsScreen: View {
     @AppStorage(ProjectViewPreference.defaultStorageKey) private var defaultProjectView = ProjectViewPreference
         .fallback.rawValue
     #endif
-    #if os(iOS)
     @AppStorage("thingsUIEnabled") private var thingsUIEnabled = true
-    #endif
     @State private var showLogoutConfirm = false
     @State private var showAbout = false
 
@@ -138,13 +136,11 @@ struct SettingsScreen: View {
                 )
             }
 
-            #if os(iOS)
             Section {
                 Toggle("Interface Things", isOn: $thingsUIEnabled)
             } footer: {
                 Text("Shows the Things-style Home and lists instead of the tab bar. Turn it off to go back to the classic interface.")
             }
-            #endif
 
             Section {
                 Toggle("Calm Mode", isOn: $calmMode)

@@ -16,6 +16,8 @@ final class MacScreenshotTests: XCTestCase {
 
         app.launchArguments += ["-MDONE_SERVER_URL", serverURL]
         app.launchArguments += ["-MDONE_TOKEN", token]
+        // The screenshots target the classic window until the Things shell is validated on a Mac.
+        app.launchArguments += ["-thingsUIEnabled", "NO"]
         app.launch()
     }
 
