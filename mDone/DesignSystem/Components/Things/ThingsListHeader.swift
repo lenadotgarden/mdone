@@ -1,27 +1,37 @@
 import SwiftUI
 
 /// Big list title with its icon (spec 02 section 2). Pass `progress` to show a project pie instead of the icon.
+/// Mac (MEASURED on mac-dark-01 and 03): icon 22 pt, title 22 pt bold, 8 pt apart,
+/// an optional trailing view (the "..." menu of a project) 10 pt after the title.
 struct ThingsListHeader: View {
     let title: String
     let symbolName: String
     var tint: ThingsColorToken = .accent
     /// When set, a ThingsProjectPie replaces the symbol.
     var progress: Double? = nil
+    /// Shown after the title, for example the "..." menu of a project.
+    var trailing: AnyView? = nil
+    /// Overrides the space under the title (the Today box sits 13 pt below it).
+    var bottomPadding: CGFloat? = nil
 
     @Environment(\.colorScheme) private var scheme
 
-    init(title: String, symbolName: String, tint: ThingsColorToken = .accent, progress: Double? = nil) {
+    init(title: String, symbolName: String, tint: ThingsColorToken = .accent, progress: Double? = nil, trailing: AnyView? = nil, bottomPadding: CGFloat? = nil) {
+        self.bottomPadding = bottomPadding
         self.title = title
         self.symbolName = symbolName
         self.tint = tint
         self.progress = progress
+        self.trailing = trailing
     }
 
-    init(title: String, kind: ThingsListKind, progress: Double? = nil) {
+    init(title: String, kind: ThingsListKind, progress: Double? = nil, trailing: AnyView? = nil, bottomPadding: CGFloat? = nil) {
+        self.bottomPadding = bottomPadding
         self.title = title
         self.symbolName = ThingsIcons.symbol(for: kind)
-        self.tint = ThingsIcons.tint(for: kind)
+        self.tint = (kind == .area) ? ThingsColorToken.areaTint : ThingsIcons.tint(for: kind)
         self.progress = progress
+        self.trailing = trailing
     }
 
     var body: some View {
@@ -40,13 +50,46 @@ struct ThingsListHeader: View {
                 .font(ThingsTypography.listTitle)
                 .foregroundStyle(palette[.textPrimary])
                 .lineLimit(2)
+            if let trailing = trailing {
+                trailing
+                    .padding(.leading, ThingsMetrics.Spacing.xs)
+            }
             Spacer(minLength: 0)
         }
         .padding(.horizontal, ThingsMetrics.Layout.listHorizontalMargin)
         .padding(.top, ThingsMetrics.Header.topPadding)
-        .padding(.bottom, ThingsMetrics.Header.bottomPadding)
-        .accessibilityElement(children: .combine)
+        .padding(.bottom, bottomPadding ?? ThingsMetrics.Header.bottomPadding)
+        .accessibilityElement(children: .contain)
         .accessibilityAddTraits(.isHeader)
+    }
+}
+
+/// The "..." button next to a project title (mac-dark-03.png). Three grey dots in a
+/// borderless menu; the items are the caller's.
+struct ThingsMoreMenu<Content: View>: View {
+    let content: Content
+
+    @Environment(\.colorScheme) private var scheme
+
+    init(@ViewBuilder content: () -> Content) {
+        self.content = content()
+    }
+
+    var body: some View {
+        Menu {
+            content
+        } label: {
+            Image(systemName: ThingsIcons.moreDots)
+                .font(.system(size: 13, weight: .bold))
+                .foregroundStyle(ThingsPalette(scheme)[.textSecondary])
+                .frame(width: 24, height: 18)
+                .contentShape(Rectangle())
+        }
+        #if os(macOS)
+        .menuStyle(.borderlessButton)
+        .menuIndicator(.hidden)
+        #endif
+        .fixedSize()
     }
 }
 

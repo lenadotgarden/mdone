@@ -131,7 +131,7 @@ private struct ThingsItemsMenuItems: View {
         Divider()
         Group {
             ThingsCommandButton(id: .editTags, title: String(localized: "Tags..."), model: model) { $0.requestPopover(.tags) }
-            ThingsCommandButton(id: .moveItem, title: String(localized: "Move..."), model: model) { $0.requestPopover(.move) }
+            ThingsCommandButton(id: .moveItem, title: String(localized: "Move..."), model: model) { $0.requestMove() }
         }
     }
 

@@ -158,6 +158,82 @@ extension ThingsMacModel {
         }
     }
 
+    /// Re-parents a project (or Area) under `parentID`, or at the top level
+    /// when nil. Refuses a cycle or a no-op. The new parent is unfolded so the
+    /// moved project stays visible.
+    func moveProject(_ projectID: Int64, toParent parentID: Int64?) {
+        let tree = projectTree
+        guard tree.canMove(projectID: projectID, toParent: parentID) else { return }
+        guard let project = appState.projects.first(where: { $0.id == projectID }) else { return }
+        if let parentID = parentID { collapsedProjectIDs.remove(parentID) }
+        let state = appState
+        Task { @MainActor in
+            await state.moveProject(project, toParentId: parentID)
+        }
+    }
+
+    /// Handles a drop on a sidebar row. `targetProjectID` is the project or
+    /// Area under the pointer. Returns whether the drop was accepted.
+    @discardableResult
+    func handleDrop(_ payloads: [String], onProject targetProjectID: Int64) -> Bool {
+        guard let first = payloads.compactMap({ ThingsDragPayload(encoded: $0) }).first else { return false }
+        switch first {
+        case .todo(let taskID):
+            guard let task = appState.tasks.first(where: { $0.id == taskID }) else { return false }
+            if task.projectId == targetProjectID { return false }
+            move(task, toProject: targetProjectID)
+            return true
+        case .project(let projectID):
+            if !projectTree.canMove(projectID: projectID, toParent: targetProjectID) { return false }
+            moveProject(projectID, toParent: targetProjectID)
+            return true
+        }
+    }
+
+    /// Handles a drop of a to-do on a built-in list row: Inbox moves it to the
+    /// Inbox project, Today and Someday schedule it. Other lists refuse.
+    @discardableResult
+    func handleDrop(_ payloads: [String], onList list: ThingsList) -> Bool {
+        guard let first = payloads.compactMap({ ThingsDragPayload(encoded: $0) }).first else { return false }
+        guard case .todo(let taskID) = first,
+              let task = appState.tasks.first(where: { $0.id == taskID }) else { return false }
+        switch list {
+        case .inbox:
+            guard let inbox = appState.defaultProject, task.projectId != inbox.id else { return false }
+            move(task, toProject: inbox.id)
+            return true
+        case .today:
+            schedule(task, when: .today)
+            return true
+        case .someday:
+            schedule(task, when: .someday)
+            return true
+        default:
+            return false
+        }
+    }
+
+    private func schedule(_ task: VTask, when: ThingsWhen) {
+        let listModel = activeViewModel
+        Task { @MainActor in
+            await listModel.schedule(task, when: when)
+        }
+    }
+
+    // MARK: - Sidebar folding
+
+    func toggleCollapsed(_ projectID: Int64) {
+        if collapsedProjectIDs.contains(projectID) {
+            collapsedProjectIDs.remove(projectID)
+        } else {
+            collapsedProjectIDs.insert(projectID)
+        }
+    }
+
+    func setAllCollapsed(_ collapsed: Bool) {
+        collapsedProjectIDs = collapsed ? Set(projectTree.expandableIDs) : []
+    }
+
     func toggleTag(_ label: VLabel, on task: VTask) {
         let state = appState
         Task { @MainActor in

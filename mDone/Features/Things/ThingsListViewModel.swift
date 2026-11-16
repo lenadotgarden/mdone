@@ -16,9 +16,11 @@ import SwiftUI
 final class ThingsListViewModel {
     let list: ThingsList
 
-    private let appState: AppState
-    private let calendar: Calendar
-    private let clock: () -> Date
+    // Internal (was private) so the extension files, for example
+    // ThingsListViewModel+NaturalLanguage.swift, can reach them.
+    let appState: AppState
+    let calendar: Calendar
+    let clock: () -> Date
 
     /// Ids of to-dos whose box was just ticked. They show as done and leave
     /// the list after `ThingsMotion.completionRemovalDelay` (spec 02 section 2).
@@ -189,6 +191,9 @@ final class ThingsListViewModel {
     func quickAdd(title: String, when: ThingsWhen? = nil) async -> VTask? {
         let trimmed = title.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty, let projectID = quickAddProjectID else { return nil }
+        if let plan = naturalLanguagePlan(for: trimmed) {
+            return await create(plan: plan, defaultProjectID: projectID, defaultWhen: when ?? impliedWhen)
+        }
         return await create(title: trimmed, projectID: projectID, when: when ?? impliedWhen)
     }
 
@@ -197,6 +202,9 @@ final class ThingsListViewModel {
     func quickAdd(title: String, inProject projectID: Int64) async -> VTask? {
         let trimmed = title.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return nil }
+        if let plan = naturalLanguagePlan(for: trimmed) {
+            return await create(plan: plan, defaultProjectID: projectID, defaultWhen: ThingsWhen.none)
+        }
         return await create(title: trimmed, projectID: projectID, when: ThingsWhen.none)
     }
 

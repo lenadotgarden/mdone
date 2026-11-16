@@ -2,6 +2,8 @@
 
 Rappel : Cultured Code ne publie aucune valeur visuelle. Tout ce qui est chiffré ici est `[FROM-MEMORY]` ou `[PROPOSAL]` et doit être calibré sur captures. Les noms de tokens sont des propositions pour le code SwiftUI (`ThingsTheme`).
 
+Mise a jour : la section 8 calibre sur les captures Mac (`reference/mac-dark-0N.png`) les valeurs Mac et la palette sombre chaude, avec une etiquette MEASURED, ESTIMATED, DERIVED ou UNSURE par valeur. Elle l emporte sur les sections 2 a 4 pour tout ce qui y figure.
+
 ## 1. Principes visuels
 
 - "Une feuille de papier propre" : fond blanc, contenu sans bordure, très peu de séparateurs `[VERIFIED https://culturedcode.com/things/features/]` (citation de presse : "a clean, crisp piece of paper").
@@ -152,3 +154,73 @@ Cultured Code ne publie pas les courbes. Équivalents recommandés :
 ## Récapitulatif [UNSURE]
 
 Tous les hex de 2.1 et 2.2 ; tailles du titre de liste, des headings, des jours Upcoming ; rayons de carte ouverte ; largeur sidebar Mac ; seuil pull-down ; icône exacte d'Area ; teinte exacte de la filter bar.
+
+## 8. Calibration sur captures Mac (palette "dark warm")
+
+Source : `reference/mac-dark-01.png` a `05.png`, 3500 x 2218 px, capture retina 2x (1 pt = 2 px). Fenetre 1750 pt, sidebar 302 pt de large, colonne de liste 1020 pt (centree dans le volet de detail, 1448 pt). Cote des valeurs : `MEASURED` = lu sur la capture a environ 1 pt pres ou echantillon de pixel ; `ESTIMATED` = lu a l'oeil sur la capture, a 1 pt ou quelques niveaux pres ; `DERIVED` = variante claire deduite de la sombre, aucune capture claire ; `UNSURE` = toujours une hypothese (iOS, palette claire). Le code est dans `DesignSystem/Tokens`, un commentaire par valeur porte la meme etiquette. La palette sombre chaude remplace le gris froid iOS comme palette sombre par defaut (iOS aussi).
+
+### 8.1 Couleurs (sombre)
+
+| Token | Hex | Cote | Usage |
+|-|-|-|-|
+| bgPrimary | #302C2A | MEASURED | fond de fenetre et de liste |
+| bgSidebar | #312D2C | MEASURED | fond de sidebar |
+| bgSidebarSelection | #3B3E42 | MEASURED | ligne selectionnee de la sidebar |
+| selectionRow | #393C3F | MEASURED | ligne selectionnee de la liste |
+| bgCalendarBox | #3F3B39 | MEASURED | boite des evenements du calendrier, pastille de date |
+| separator | #4F4B4A | MEASURED | filet sous un en-tete de section |
+| bgExpandedTodo | #3B3735 | ESTIMATED | carte du to-do ouvert |
+| textPrimary | #F4F2F0 | ESTIMATED | titres |
+| textSecondary | #8F8B89 | ESTIMATED | ligne de projet, icone de notes |
+| textPlaceholder | #77726F | ESTIMATED | "Notes", icones de la barre de la carte |
+| textMutedLink | #7A7674 | ESTIMATED | "Hide later items", "Show N logged items" |
+| checkboxBorder | #7C7875 | ESTIMATED | contour de la case |
+| tagPillBorder / tagPillText | #6A6664 / #9A9694 | ESTIMATED | pastille de tag (contour seul) |
+| chipFill / chipText | #8F8B89 / #2B2725 | ESTIMATED | pastille "All" selectionnee |
+| todayStar | #FFD60A | ESTIMATED | etoile |
+| eveningMoon | #A9B7F3 | ESTIMATED | lune de This Evening |
+| upcomingRed | #F0476B | ESTIMATED | icone calendrier |
+| anytimeTeal | #3BAFA8 | ESTIMATED | icone Anytime |
+| somedayTan | #DCC48C | ESTIMATED | icone Someday |
+| logbookGreen | #57C26A | ESTIMATED | icone Logbook |
+| areaTint | #7CCFAE | ESTIMATED | cube d'Area dans l'en-tete |
+| accent, deadlineFlame, filterBarGreen | inchanges | UNSURE | pas visibles sur les captures |
+
+Variantes claires : `DERIVED` pour bgCalendarBox (#F1F1F3) et bgSidebarSelection (#DADDE3), `UNSURE` pour le reste (aucune capture claire).
+
+### 8.2 Dimensions Mac (pt)
+
+| Element | Valeur | Cote |
+|-|-|-|
+| Hauteur de ligne, titre seul | 28 | MEASURED (pas entre lignes) |
+| Hauteur de ligne, titre + ligne de projet | 38 | MEASURED |
+| Case a cocher | 12, rayon 3, contour 1, centree verticalement dans la ligne | MEASURED taille, ESTIMATED rayon et contour |
+| Case Someday | contour en pointilles 2 / 2 | MEASURED (pointilles), ESTIMATED motif |
+| Gouttiere gauche | surbrillance a x = 0, case a x = 10 | MEASURED |
+| Case a titre | 9 (titre a x = 31 depuis le bord de la ligne) | MEASURED |
+| Rayon de la surbrillance | 6 continu | ESTIMATED |
+| Separateurs entre lignes | aucun | MEASURED |
+| Titre de to-do | 14 regular | ESTIMATED |
+| Ligne de projet | 12 regular, emoji inclus dans le texte | ESTIMATED |
+| Icone de notes apres le titre | 10, ecart 5 | MEASURED position, ESTIMATED taille |
+| Pastille de tag en ligne | contour 0,75, capsule 16 haut, texte 11 medium, 8 apres le titre | MEASURED hauteur, ESTIMATED reste |
+| Pastille de date ("Thu") | 16 haut, rayon 4, fond bgCalendarBox, texte 11 | MEASURED hauteur |
+| Titre de liste | 22 bold, icone 22, ecart 8, centre a y = 84 (barre d'outils 52) | MEASURED centre, ESTIMATED corps |
+| Titre au premier to-do | 27 (sans boite ni filtre) | MEASURED |
+| Boite d'evenements Today | 1000 x 66 pour 3 lignes, rayon 10, marge 12 / 9, pas 16, barre 3 x 11, texte 12 | MEASURED sauf rayon et texte (ESTIMATED) |
+| Titre a la boite / boite au filtre / filtre a la premiere ligne | 13 / 16 / 46 | MEASURED |
+| Pastille de filtre | 20 haut, texte 12 semibold, "All" = capsule pleine | MEASURED hauteur, ESTIMATED texte |
+| En-tete de section | icone 14, titre 14 bold a x = 31, filet 0,5 a 6 sous le texte, 7 de marge de chaque cote | MEASURED positions, ESTIMATED corps |
+| Espace avant un en-tete / filet a la premiere ligne | 40 / 9 | MEASURED (34 a 46 selon la ligne precedente) |
+| Carte ouverte | decalage 4 hors de la ligne, rayon 12, marge interne 14, haut 18, bas 19, zone de notes 60 mini | MEASURED sauf rayon (ESTIMATED) |
+| Barre de la carte | when a gauche a x = 35, 3 icones de 13 pt, pas 32, marge droite 28 | MEASURED |
+| Fil d'Ariane sous la carte | 12 semibold, aligne a 17 du bord droit de la carte, 17 sous la carte | MEASURED |
+| Ombre de la carte | rayon 12, y 3, noir a 30 % (sombre) | ESTIMATED (quasi invisible sur les captures) |
+| "Hide later items" | 12, 38 sous la derniere ligne, a x = 10 ; "Show N logged items" 23 plus bas | MEASURED |
+| Largeur de la sidebar | 302 | MEASURED (largeur de la capture, le code garde 240 ideal pour une fenetre normale) |
+
+Valeurs de la spec d'origine rendues obsoletes par ce tableau : 4 (carte Mac : rayon 8, ombre y 2 flou 10), 3 (titre de liste Mac 26, titre de to-do 13), 4 (case Mac 16, hauteur de ligne 28 a 30, marge 20).
+
+### 8.3 Animations de reordonnancement
+
+Pas dans les captures (statiques), donc `[PROPOSAL]` : levee de la ligne `scale 1,03` + ombre (ressort 0,2 / 0,75), autres lignes qui s'ecartent (`ThingsMotion.reorder`, ressort 0,28 / 0,8), echange clavier Cmd Opt fleche (`ThingsMotion.reorderSwap`, ressort 0,26 / 0,82), retour a la place en cas d'echec reseau.

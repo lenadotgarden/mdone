@@ -16,7 +16,9 @@ final class ThingsQuickEntryNSPanel: NSPanel {
 /// Settings, so it is installed only when `AXIsProcessTrusted()` says yes and
 /// never prompts by itself. A global monitor observes keys but cannot consume
 /// them: macOS may also react to Ctrl Space (input source switching).
-/// Autofill, tags, When and Deadline in the panel are TODOs (DEVIATIONS.md).
+/// Autofill and the When, Deadline and tag buttons of the panel are TODOs
+/// (DEVIATIONS.md). Natural language in the title covers When, Deadline, tags
+/// and project meanwhile (`ThingsNaturalLanguage`).
 @MainActor
 final class ThingsQuickEntryController {
     static let shared = ThingsQuickEntryController()
@@ -76,7 +78,7 @@ final class ThingsQuickEntryController {
         close()
         let content = ThingsQuickEntryView(appState: appState, onClose: { [weak self] in self?.close() })
         let newPanel = ThingsQuickEntryNSPanel(
-            contentRect: NSRect(x: 0, y: 0, width: 460, height: 180),
+            contentRect: NSRect(x: 0, y: 0, width: 460, height: 215),
             styleMask: [.titled, .closable, .fullSizeContentView, .nonactivatingPanel],
             backing: .buffered,
             defer: false
@@ -122,6 +124,12 @@ struct ThingsQuickEntryView: View {
                     .font(ThingsTypography.todoTitle)
                     .focused($titleFocused)
                     .onSubmit { save() }
+            }
+            // Natural language: the line is read by ThingsListViewModel.quickAdd, this
+            // shows what it will become (When, deadline, tags, project).
+            if !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                ThingsNaturalLanguagePreview(text: title, appState: appState)
+                    .padding(.leading, ThingsMetrics.Checkbox.size + ThingsMetrics.Row.checkboxTitleSpacing)
             }
             TextField(String(localized: "Notes"), text: $notes, axis: .vertical)
                 .textFieldStyle(.plain)

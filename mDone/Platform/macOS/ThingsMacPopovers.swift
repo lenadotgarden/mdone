@@ -160,75 +160,203 @@ struct ThingsMacTagsPopover: View {
     }
 }
 
-/// The Move popover (Shift Cmd M, spec 04 section 4): search, then Inbox,
-/// projects and Areas. Targeting headings and inactive projects is a TODO.
+/// The Move popover for a to-do (Shift Cmd M, spec 04 section 4): a filter
+/// field, then Inbox and the whole project tree. Targeting headings and
+/// inactive projects is a TODO.
 struct ThingsMacMovePopover: View {
     let task: VTask
     let model: ThingsMacModel
     let onClose: () -> Void
 
-    @State private var query = ""
+    var body: some View {
+        ThingsMacMoveChooser(subject: .todo(task), model: model, onClose: onClose)
+    }
+}
 
-    private struct Target: Identifiable {
-        let id: Int64
-        let title: String
-        let symbol: String
+/// The Move popover for a project or an Area selected in the sidebar: pick an
+/// Area or project to put it under, or "No Area" for the top level.
+struct ThingsMacProjectMovePopover: View {
+    let project: Project
+    let model: ThingsMacModel
+    let onClose: () -> Void
+
+    var body: some View {
+        ThingsMacMoveChooser(subject: .project(project), model: model, onClose: onClose)
+    }
+}
+
+/// Shared list of the two Move popovers: type to filter, Up and Down to
+/// highlight, Return to choose, Esc to close. Indented by tree depth while
+/// the filter is empty, with the parent path shown while filtering.
+struct ThingsMacMoveChooser: View {
+    enum Subject {
+        case todo(VTask)
+        case project(Project)
     }
 
-    private var targets: [Target] {
-        var result: [Target] = []
-        if let inbox = model.appState.defaultProject {
-            result.append(Target(id: inbox.id, title: String(localized: "Inbox"), symbol: ThingsIcons.inbox))
+    let subject: Subject
+    let model: ThingsMacModel
+    let onClose: () -> Void
+
+    @State private var query = ""
+    @State private var highlighted = 0
+    @FocusState private var focused: Bool
+    @Environment(\.colorScheme) private var scheme
+
+    private var palette: ThingsPalette { ThingsPalette(scheme) }
+
+    private var targets: [ThingsMoveTarget] {
+        let tree = model.projectTree
+        switch subject {
+        case .todo:
+            return ThingsMoveTargets.forTodo(tree: tree, inboxProject: model.appState.defaultProject, query: query)
+        case .project(let project):
+            return ThingsMoveTargets.forProject(tree: tree, projectID: project.id, query: query)
         }
-        for project in model.home.looseProjects {
-            result.append(Target(id: project.id, title: project.project.title, symbol: ThingsIcons.project))
+    }
+
+    /// The project id the subject currently sits in (nil = top level).
+    private var currentProjectID: Int64? {
+        switch subject {
+        case .todo(let task):
+            return task.projectId
+        case .project(let project):
+            return model.projectTree.node(id: project.id)?.parentID
         }
-        for area in model.home.areas {
-            result.append(Target(id: area.id, title: area.project.title, symbol: ThingsIcons.area))
-            for child in area.children {
-                result.append(Target(id: child.id, title: child.project.title, symbol: ThingsIcons.project))
-            }
+    }
+
+    private var placeholder: String {
+        switch subject {
+        case .todo: return String(localized: "Move to...")
+        case .project: return String(localized: "Move to Area or project...")
         }
-        let needle = query.trimmingCharacters(in: .whitespacesAndNewlines)
-        if needle.isEmpty { return result }
-        return result.filter { $0.title.localizedCaseInsensitiveContains(needle) }
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: ThingsMetrics.Spacing.s) {
-            TextField(String(localized: "Move to..."), text: $query)
+        let list = targets
+        return VStack(alignment: .leading, spacing: ThingsMetrics.Spacing.s) {
+            TextField(placeholder, text: $query)
                 .textFieldStyle(.roundedBorder)
-                .onSubmit {
-                    if let first = targets.first { choose(first) }
+                .focused($focused)
+                .onSubmit { chooseHighlighted(in: list) }
+                .onKeyPress(.upArrow) {
+                    highlighted = ThingsMoveTargets.clampedIndex(highlighted - 1, count: list.count)
+                    return .handled
                 }
+                .onKeyPress(.downArrow) {
+                    highlighted = ThingsMoveTargets.clampedIndex(highlighted + 1, count: list.count)
+                    return .handled
+                }
+            if list.isEmpty {
+                Text(String(localized: "No results"))
+                    .font(ThingsTypography.emptyMessage)
+                    .foregroundStyle(palette[.textSecondary])
+                    .frame(maxWidth: .infinity, minHeight: 60)
+            } else {
+                rows(list)
+            }
+        }
+        .padding(ThingsMetrics.Spacing.m)
+        .frame(width: 300)
+        .onAppear { focused = true }
+        .onChange(of: query) { _, _ in highlighted = 0 }
+        .onExitCommand { onClose() }
+    }
+
+    private func rows(_ list: [ThingsMoveTarget]) -> some View {
+        let isFiltering = !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        return ScrollViewReader { proxy in
             ScrollView {
-                VStack(alignment: .leading, spacing: ThingsMetrics.Spacing.xs) {
-                    ForEach(targets) { target in
-                        Button {
-                            choose(target)
-                        } label: {
-                            HStack {
-                                Image(systemName: target.symbol)
-                                Text(verbatim: target.title)
-                                Spacer(minLength: 0)
-                                if target.id == task.projectId {
-                                    Image(systemName: ThingsIcons.checkmark)
-                                }
-                            }
-                            .contentShape(Rectangle())
-                        }
-                        .buttonStyle(.plain)
+                VStack(alignment: .leading, spacing: 0) {
+                    ForEach(Array(list.enumerated()), id: \.element.id) { index, target in
+                        row(target, index: index, isFiltering: isFiltering)
+                            .id(target.id)
                     }
                 }
             }
-            .frame(maxHeight: 260)
+            .frame(maxHeight: 280)
+            .onChange(of: highlighted) { _, newValue in
+                let index = ThingsMoveTargets.clampedIndex(newValue, count: list.count)
+                if index < list.count { proxy.scrollTo(list[index].id) }
+            }
         }
-        .padding(ThingsMetrics.Spacing.m)
-        .frame(width: 260)
     }
 
-    private func choose(_ target: Target) {
-        model.move(task, toProject: target.id)
+    private func row(_ target: ThingsMoveTarget, index: Int, isFiltering: Bool) -> some View {
+        let isCurrent = target.projectID == currentProjectID
+        let indent = isFiltering ? 0 : CGFloat(max(target.depth - 1, 0)) * ThingsMetrics.Spacing.m
+        return Button {
+            choose(target)
+        } label: {
+            HStack(spacing: ThingsMetrics.Spacing.s) {
+                Image(systemName: symbol(for: target))
+                    .foregroundStyle(palette[tint(for: target)])
+                    .frame(width: ThingsMetrics.Icon.list)
+                Text(verbatim: title(for: target))
+                    .font(target.kind == .area ? ThingsTypography.sidebarRow.weight(.semibold) : ThingsTypography.sidebarRow)
+                    .lineLimit(1)
+                if isFiltering && !target.path.isEmpty {
+                    Text(verbatim: target.path)
+                        .font(ThingsTypography.notes)
+                        .foregroundStyle(palette[.textSecondary])
+                        .lineLimit(1)
+                }
+                Spacer(minLength: 0)
+                if isCurrent {
+                    Image(systemName: ThingsIcons.checkmark)
+                        .foregroundStyle(palette[.textSecondary])
+                }
+            }
+            .padding(.leading, indent)
+            .padding(.horizontal, ThingsMetrics.Spacing.s)
+            .padding(.vertical, ThingsMetrics.Spacing.xs)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(
+                RoundedRectangle(cornerRadius: ThingsMetrics.Checkbox.cornerRadius)
+                    .fill(index == highlighted ? palette[.selectionRow] : Color.clear)
+            )
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func title(for target: ThingsMoveTarget) -> String {
+        switch target.kind {
+        case .inbox: return String(localized: "Inbox")
+        case .topLevel: return String(localized: "No Area")
+        case .area, .project: return target.title
+        }
+    }
+
+    private func symbol(for target: ThingsMoveTarget) -> String {
+        switch target.kind {
+        case .inbox: return ThingsIcons.inbox
+        case .topLevel: return "arrow.up.to.line"
+        case .area: return ThingsIcons.area
+        case .project: return ThingsIcons.project
+        }
+    }
+
+    private func tint(for target: ThingsMoveTarget) -> ThingsColorToken {
+        switch target.kind {
+        case .inbox: return .accent
+        case .topLevel, .area: return .areaGray
+        case .project: return .accent
+        }
+    }
+
+    private func chooseHighlighted(in list: [ThingsMoveTarget]) {
+        if list.isEmpty { return }
+        choose(list[ThingsMoveTargets.clampedIndex(highlighted, count: list.count)])
+    }
+
+    private func choose(_ target: ThingsMoveTarget) {
+        switch subject {
+        case .todo(let task):
+            if let projectID = target.projectID { model.move(task, toProject: projectID) }
+        case .project(let project):
+            model.moveProject(project.id, toParent: target.projectID)
+        }
         onClose()
     }
 }

@@ -58,6 +58,11 @@ final class ThingsMacModel {
     /// Bumped to give the keyboard focus back to the list.
     var listFocusToken = 0
 
+    /// The project whose Move popover is open in the sidebar (Shift Cmd M with a project on screen).
+    var projectMoveRequest: Int64?
+    /// Projects and Areas folded in the sidebar.
+    var collapsedProjectIDs: Set<Int64> = []
+
     var sheet: ThingsMacSheet?
     var showQuickFind = false
     var pendingDeletion: VTask?
@@ -85,6 +90,11 @@ final class ThingsMacModel {
     var activeViewModel: ThingsListViewModel {
         if case .list(let list) = route { return viewModel(for: list) }
         return viewModel(for: .anytime)
+    }
+
+    /// The full project tree of the sidebar (Areas, projects, deeper levels).
+    var projectTree: ThingsProjectTree {
+        ThingsProjectTree.build(projects: appState.projects, inboxProjectID: appState.defaultProject?.id)
     }
 
     var selectedTask: VTask? {
@@ -184,6 +194,18 @@ final class ThingsMacModel {
         guard let id = selectedTaskID else { return }
         expandedTaskID = id
         pendingPopover = popover
+    }
+
+    /// Move (Shift Cmd M): the selected to-do when there is one, else the
+    /// project or Area on screen (its popover opens in the sidebar).
+    func requestMove() {
+        if selectedTaskID != nil {
+            requestPopover(.move)
+            return
+        }
+        if case .project(let id) = route, projectTree.node(id: id) != nil {
+            projectMoveRequest = id
+        }
     }
 
     func requestChecklist() {

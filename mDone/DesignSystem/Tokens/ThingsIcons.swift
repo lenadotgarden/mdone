@@ -26,6 +26,9 @@ enum ThingsIcons {
     static let deadlineFlame = "flame.fill"
     static let checklist = "checklist"
     static let notes = "note.text"
+    /// Small document glyph after a Mac row title when the to-do has notes.
+    static let notesDocument = "doc"
+    static let moreDots = "ellipsis"
     static let repeating = "repeat"
     static let tag = "tag"
     static let when = "calendar"

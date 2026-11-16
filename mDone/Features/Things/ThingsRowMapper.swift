@@ -47,6 +47,7 @@ enum ThingsRowMapper {
         model.isRepeating = task.isRepeating
         model.showsTodayStar = showsTodayStar(task, list: list, now: now, calendar: calendar)
         model.isDimmed = list != .someday && task.hasThingsSomedayLabel && !task.done
+        model.isSomeday = task.hasThingsSomedayLabel && !task.done
         return model
     }
 
@@ -78,6 +79,73 @@ enum ThingsRowMapper {
         if list != nil && list != .anytime { return false }
         let when = ThingsWhen.resolve(task: task, now: now, calendar: calendar)
         return when == .today || when == .thisEvening
+    }
+
+    // MARK: - Project line and date pill (Mac two-line rows)
+
+    /// Sets the second line of each row to the title of the task's project or
+    /// Area (mac-dark-01.png: the emoji of the name is part of the title text).
+    /// The Inbox project and `hiddenProjectID` (the project on screen) get no
+    /// line, so the row stays single-line there.
+    static func applyingProjectLine(
+        to rows: [ThingsDisplayRow],
+        projects: [Project],
+        inboxProjectID: Int64?,
+        hiddenProjectID: Int64? = nil
+    ) -> [ThingsDisplayRow] {
+        var titles: [Int64: String] = [:]
+        for project in projects {
+            titles[project.id] = project.title
+        }
+        return rows.map { row in
+            var copy = row
+            copy.model.projectLine = projectLine(
+                forProjectID: row.task.projectId,
+                titles: titles,
+                inboxProjectID: inboxProjectID,
+                hiddenProjectID: hiddenProjectID
+            )
+            return copy
+        }
+    }
+
+    /// The project line text for a project id, nil when it must not be shown.
+    static func projectLine(
+        forProjectID projectID: Int64,
+        titles: [Int64: String],
+        inboxProjectID: Int64?,
+        hiddenProjectID: Int64?
+    ) -> String? {
+        if projectID == inboxProjectID || projectID == hiddenProjectID { return nil }
+        guard let title = titles[projectID] else { return nil }
+        let trimmed = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.isEmpty ? nil : trimmed
+    }
+
+    /// Short weekday such as "Thu", used as the pill in front of a project row
+    /// that starts in the future (mac-dark-03.png).
+    static func weekdayPill(for day: Date, calendar: Calendar) -> String {
+        let formatter = DateFormatter()
+        formatter.calendar = calendar
+        formatter.timeZone = calendar.timeZone
+        formatter.locale = calendar.locale ?? Locale.current
+        formatter.setLocalizedDateFormatFromTemplate("EEE")
+        return formatter.string(from: day)
+    }
+
+    /// Sets the date pill of rows whose When is a future date.
+    static func applyingDatePills(
+        to rows: [ThingsDisplayRow],
+        now: Date,
+        calendar: Calendar
+    ) -> [ThingsDisplayRow] {
+        rows.map { row in
+            var copy = row
+            if case .date(let day) = ThingsWhen.resolve(task: row.task, now: now, calendar: calendar) {
+                copy.model.datePill = weekdayPill(for: day, calendar: calendar)
+            }
+            return copy
+        }
     }
 
     // MARK: - Sections

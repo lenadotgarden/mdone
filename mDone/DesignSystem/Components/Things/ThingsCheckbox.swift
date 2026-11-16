@@ -18,10 +18,12 @@ enum ThingsCheckboxState: Equatable {
 }
 
 /// The to-do checkbox. Pass `action` to make it tappable, nil to display only.
+/// `isDashed` draws the dashed outline of a Someday to-do (seen on the Mac captures).
 struct ThingsCheckbox: View {
     let state: ThingsCheckboxState
     var size: CGFloat = ThingsMetrics.Checkbox.size
     var action: (() -> Void)? = nil
+    var isDashed: Bool = false
 
     @Environment(\.colorScheme) private var scheme
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -46,12 +48,24 @@ struct ThingsCheckbox: View {
     private var box: some View {
         ZStack {
             shape.fill(fillColor)
-            shape.strokeBorder(borderColor, lineWidth: ThingsMetrics.Checkbox.borderWidth)
+            outline
             glyph
         }
         .frame(width: size, height: size)
         .contentShape(Rectangle())
         .animation(ThingsMotion.resolved(ThingsMotion.checkboxToggle, reduceMotion: reduceMotion), value: state)
+    }
+
+    @ViewBuilder
+    private var outline: some View {
+        if isDashed && state == .open {
+            shape.strokeBorder(
+                borderColor,
+                style: StrokeStyle(lineWidth: ThingsMetrics.Checkbox.borderWidth, dash: ThingsMetrics.Checkbox.somedayDash)
+            )
+        } else {
+            shape.strokeBorder(borderColor, lineWidth: ThingsMetrics.Checkbox.borderWidth)
+        }
     }
 
     private var shape: RoundedRectangle {
@@ -107,6 +121,7 @@ struct ThingsCheckbox: View {
         ThingsCheckbox(state: .inProgress)
         ThingsCheckbox(state: .done)
         ThingsCheckbox(state: .cancelled)
+        ThingsCheckbox(state: .open, isDashed: true)
     }
     .padding()
     .background(ThingsTheme.color(.bgPrimary, .light))
@@ -119,6 +134,7 @@ struct ThingsCheckbox: View {
         ThingsCheckbox(state: .inProgress)
         ThingsCheckbox(state: .done)
         ThingsCheckbox(state: .cancelled)
+        ThingsCheckbox(state: .open, isDashed: true)
     }
     .padding()
     .background(ThingsTheme.color(.bgPrimary, .dark))

@@ -1,6 +1,8 @@
 import SwiftUI
 
 /// Hairline separator. `leadingInset` aligns it on the title text by default.
+/// The Mac list shows no row separators (MEASURED on the captures); only the
+/// section rule of `ThingsSectionHeader` is drawn there.
 struct ThingsDivider: View {
     var leadingInset: CGFloat = ThingsMetrics.Row.separatorInset
 

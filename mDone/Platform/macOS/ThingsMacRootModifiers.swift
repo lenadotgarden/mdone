@@ -18,8 +18,12 @@ private struct ThingsMacSheets: ViewModifier {
                     ThingsMacSettingsSheet()
                 }
             }
-            .sheet(isPresented: Binding(get: { model.showQuickFind }, set: { model.showQuickFind = $0 })) {
-                ThingsQuickFindView(model: model)
+            // Quick Find is a card over the window rather than a sheet, so Type Travel
+            // keeps the key focus in the same window (spec 04 section 6).
+            .overlay {
+                if model.showQuickFind {
+                    ThingsQuickFindView(model: model)
+                }
             }
             .alert(
                 String(localized: "Delete this to-do?"),

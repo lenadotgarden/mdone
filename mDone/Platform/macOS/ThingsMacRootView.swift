@@ -38,6 +38,7 @@ struct ThingsMacRootView: View {
         .frame(minWidth: 760, minHeight: 520)
         .focusedSceneValue(\.thingsMac, model)
         .thingsMacSheets(model: model)
+        .thingsTypeTravel(model: model)
         .thingsMacSystemAlerts(appState: model.appState)
         .task {
             await model.appState.refreshAll()

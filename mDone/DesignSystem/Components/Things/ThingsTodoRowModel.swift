@@ -21,6 +21,16 @@ struct ThingsTodoRowModel: Identifiable, Equatable {
     var reminderText: String? = nil
     /// Draw dimmed, for Someday content.
     var isDimmed: Bool = false
+    /// Second line under the title on Mac: the name of the project or Area the
+    /// to-do lives in, emoji included when the name carries one. Nil hides the line.
+    var projectLine: String? = nil
+    /// Short text in a pill in front of the title on Mac, for example the weekday "Thu".
+    var datePill: String? = nil
+    /// The to-do is in Someday: the checkbox outline is dashed on Mac.
+    var isSomeday: Bool = false
 
     var isFinished: Bool { checkbox == .done || checkbox == .cancelled }
+
+    /// Whether the Mac row is two lines high.
+    var hasProjectLine: Bool { !(projectLine ?? "").isEmpty }
 }

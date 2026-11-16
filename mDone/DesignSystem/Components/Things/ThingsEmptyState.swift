@@ -1,6 +1,8 @@
 import SwiftUI
 
 /// Centered placeholder for an empty list. Wording is the caller's (spec 06 holds the texts).
+/// The captures show no empty list, so the Mac look is [PROPOSAL]: a small tinted icon,
+/// a 14 pt secondary title and a 13 pt placeholder-grey message, as quiet as the rest of the list.
 struct ThingsEmptyState: View {
     let symbolName: String
     let title: String
