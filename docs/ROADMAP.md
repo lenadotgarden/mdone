@@ -9,13 +9,13 @@ Statut : `[ ]` à faire, `[~]` en cours, `[x]` fait. Chaque jalon est validé pa
 - [ ] Étapes 5 à 9 (Domain extrait, AppState éclaté, préférences typées)
 
 ## Phase 1 - Domain Things (testé en CI, sans UI)
-- [ ] Mapping Vikunja (Inbox, Area, Heading, When/Deadline, Evening, Someday)
-- [ ] Listes Inbox, Today, Upcoming, Anytime, Someday, Logbook
+- [x] Mapping Vikunja (Domain/Mapping, tests verts en CI)
+- [x] Listes Inbox, Today, Upcoming, Anytime, Someday, Logbook (tests verts en CI)
 - [ ] Répétition (fixe / après complétion), rappels
 
 ## Phase 2 - DesignSystem
-- [ ] Tokens clair/sombre, typographie, animations
-- [ ] Composants : case ronde, ligne, chips, checklist, en-têtes, Magic Plus
+- [~] Tokens (valeurs à calibrer sur captures réelles)
+- [~] Composants écrits, previews à valider, Magic Plus à faire
 
 ## Phase 3 - iPhone
 - [ ] Home, Today, Upcoming, Anytime, Someday, Logbook, Area, Project
