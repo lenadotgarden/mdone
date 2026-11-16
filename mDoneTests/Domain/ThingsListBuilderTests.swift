@@ -113,7 +113,7 @@ final class ThingsListBuilderTests: XCTestCase {
             makeTask(id: 4, project: inboxID, labels: ["things:someday"]),
             makeTask(id: 5, project: inboxID, labels: ["things:evening"]),
             makeTask(id: 6, project: otherID),
-            makeTask(id: 7, project: inboxID, done: true),
+            makeTask(id: 7, done: true, project: inboxID),
         ]
         XCTAssertEqual(ids(sections(.inbox, tasks)), [1, 2])
     }
@@ -189,8 +189,8 @@ final class ThingsListBuilderTests: XCTestCase {
     func testTodayExcludesSomedayAndDone() {
         let tasks = [
             makeTask(id: 1, start: date(2026, 11, 16, in: utc), labels: ["things:someday"]),
-            makeTask(id: 2, start: date(2026, 11, 16, in: utc), done: true),
-            makeTask(id: 3, due: date(2026, 11, 10, in: utc), done: true),
+            makeTask(id: 2, done: true, start: date(2026, 11, 16, in: utc)),
+            makeTask(id: 3, done: true, due: date(2026, 11, 10, in: utc)),
         ]
         XCTAssertTrue(sections(.today, tasks).isEmpty)
     }
@@ -311,7 +311,7 @@ final class ThingsListBuilderTests: XCTestCase {
         let tasks = [
             makeTask(id: 1, start: date(2026, 11, 18, in: utc), labels: ["things:someday"]),
             makeTask(id: 2, start: date(2026, 11, 16, in: utc)),
-            makeTask(id: 3, start: date(2026, 11, 18, in: utc), done: true),
+            makeTask(id: 3, done: true, start: date(2026, 11, 18, in: utc)),
             makeTask(id: 4),
             makeTask(id: 5, due: date(2026, 11, 18, in: utc), labels: ["things:someday"]),
         ]
@@ -410,12 +410,12 @@ final class ThingsListBuilderTests: XCTestCase {
     func testDoneTasksAppearOnlyInLogbook() {
         let day = date(2026, 11, 16, in: utc)
         let tasks = [
-            makeTask(id: 1, project: inboxID, done: true),
-            makeTask(id: 2, start: day, done: true),
-            makeTask(id: 3, due: day, done: true),
-            makeTask(id: 4, start: date(2026, 11, 20, in: utc), done: true),
+            makeTask(id: 1, done: true, project: inboxID),
+            makeTask(id: 2, done: true, start: day),
+            makeTask(id: 3, done: true, due: day),
+            makeTask(id: 4, done: true, start: date(2026, 11, 20, in: utc)),
             makeTask(id: 5, done: true),
-            makeTask(id: 6, labels: ["things:someday"], done: true),
+            makeTask(id: 6, done: true, labels: ["things:someday"]),
         ]
         for list in ThingsList.allCases where list != .logbook {
             XCTAssertTrue(sections(list, tasks).isEmpty, "\(list) must not show done tasks")
