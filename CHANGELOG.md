@@ -7,15 +7,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- Mac, Things window: Cmd Z and Shift Cmd Z undo and redo what you did in the list (complete, delete, create, move, reorder, When, Deadline, title and notes, tags, checklist), up to 100 steps, with the step named in the Edit menu. Undoing a delete creates the to-do again, so it gets a new id.
+- Mac, Things window: Delete, Backspace and Cmd Backspace delete the selected to-do at once, Space adds a to-do below the selection (or at the top of the project), Cmd S opens the When popover (with a month grid, Add Reminder and a typed date) and Shift Cmd D the Deadline popover.
+- Things interface: the whole project tree (sub-projects at any depth) shows in the Mac sidebar, on the iPhone Home screen and on every Area or project screen, where the sub-projects come first. Folding is remembered per project. On Mac, drag a project onto another project or Area to nest it, or between two rows to reorder it.
 - Mac: a Things-style window (sidebar with lists, projects and Areas, to-dos that open in place, When, Deadline, Tags and Move popovers, Quick Find, a Quick Entry panel) with the Things keyboard shortcuts. It is on by default and can be turned off with "Interface Things" in Settings.
 - Signing in to a Vikunja server that uses LDAP or Active Directory is now spelled out on the sign-in screen. When the server signs people in through a directory, the hint under the form says to use the username and password from that directory (#156).
 
 ### Changed
+- A project that holds sub-projects is no longer hidden when it is picked as the Inbox by the automatic fallback.
 - Smart parsing is now on by default in the quick-add bar, in Siri and Shortcuts, and in the Things interface (natural language in the new to-do row and the Quick Entry panel). Settings > Tasks > "Smart parsing in quick add" turns it off. Anyone who already chose a value keeps it.
 - mDone now needs Vikunja 2.5.0 or newer. It has moved to Vikunja's newer v2 API, which servers before 2.4.0 do not have, and 2.4.0 rejects changes to many tasks. Signing in to an older server tells you which version it runs and asks you to update it. If you are already signed in to one, mDone says so each time it opens and in Settings, and cannot sync until the server is updated (#291, #292).
 - Changing a task now sends only what you changed. Before, mDone sent the whole task back, so an edit could undo a change made to that task in the web app or another device in the meantime, and anything mDone did not know about the task was at risk. Ticking off a task, in the app, a widget or after being offline, now sends just that it is done (#292).
 
 ### Fixed
+- Mac, Things window: the deadline flag is now the same grey as its text until the deadline is today or past, then both turn red. Completing a to-do draws the checkmark and strikes the title before the row leaves, and a dropped to-do lands in place without a second animation.
+- Mac, Things window: subtasks that have their own project, date, deadline or tag, and open subtasks of a finished task, now show as to-dos in the lists. They used to be hidden along with plain checklist steps, which made many tasks look missing.
+- Mac, Things window: a refresh no longer stops at the first page when the server does not report a page count, and duplicate tasks returned by two pages are merged.
+- Mac, Things window: pressing a reorder shortcut, or any request that the server answers with a stray 401, can no longer sign you out. The session ends only when the server rejects the refresh token itself. A refresh that returns the same token as before is no longer read as a failure.
+- Mac, Things window: switching back to the app no longer downloads every task again (at most one full refresh every 30 seconds, and refreshes that overlap are merged). Lists, counts, project progress and the sidebar tree are computed once per change instead of on every redraw, and the offline cache is no longer rewritten when nothing changed.
+- Mac, Things window: the list takes the keyboard focus back when the app or window becomes active again, so the arrow keys keep working after switching apps.
 - Signing in to a Vikunja server that uses LDAP or Active Directory with a wrong password now says the username and password weren't accepted and that the account uses its directory password. It used to show "Something went wrong with that request" (#156).
 - Repeating tasks now show on the calendar on every day they are due, not only on their next one. A daily task appears on each remaining day of the month and a weekly task on each week it falls in, so you can see what is coming. These future occurrences are drawn in a lighter shade with a dashed circle and cannot be ticked off, edited or deleted, because Vikunja keeps a single copy of a repeating task and moves it forward when you complete the real one (#35).
 - Monthly repeating tasks are now recognised as repeating. Vikunja records a monthly repeat without an interval, which the app read as "does not repeat", so those tasks showed no repeat marker anywhere (#35).

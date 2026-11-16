@@ -58,6 +58,8 @@ enum ThingsMetrics {
         static let borderWidth: CGFloat = ThingsPlatform.value(ios: 1.5, mac: 1)
         /// Checkmark and cross size as a fraction of the box size.
         static let glyphScale: CGFloat = 0.6
+        /// Stroke width of the drawn checkmark, as a share of the box size.
+        static let checkStrokeScale: CGFloat = 0.15
         /// Diameter of the in-progress dot as a fraction of the box size.
         static let inProgressDotScale: CGFloat = 0.4
         /// Dash pattern of the Someday checkbox on Mac (MEASURED: the box is dashed there).
@@ -214,6 +216,27 @@ enum ThingsMetrics {
     enum Deadline {
         /// At or below this many days left, the label turns red.
         static let urgentThresholdDays: Int = 0
+    }
+
+    /// The When and Deadline popovers and their month grid (docs/things-spec/05 "Dates").
+    /// ESTIMATED from the Things popovers: no capture of them is in the repository yet.
+    enum DatePopover {
+        static let width: CGFloat = 264
+        static let padding: CGFloat = 12
+        static let rowHeight: CGFloat = 26
+        static let rowCornerRadius: CGFloat = 5
+        static let rowIconWidth: CGFloat = 18
+        static let cellSize: CGFloat = 30
+        static let cellSpacing: CGFloat = 2
+        static let cellCornerRadius: CGFloat = 6
+        static let monthHeaderHeight: CGFloat = 26
+        static let clearButtonHeight: CGFloat = 28
+        static let todayStarSize: CGFloat = 13
+    }
+
+    /// The strike line that grows over a title when it is completed (spec 06 section 2).
+    enum Strike {
+        static let thickness: CGFloat = 1
     }
 
     /// Drag and drop on the Mac list (docs/things-spec/08-drag-and-drop.md).

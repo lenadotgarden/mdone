@@ -329,6 +329,10 @@ actor APIClient {
         _ build: () throws -> URLRequest
     ) async throws -> (Data, HTTPURLResponse) {
         let request = try build()
+        // The token this request went out with. Compared with the live token
+        // after a 401 to tell "my token is stale" from "someone already
+        // refreshed while I was waiting". No suspension between build and here.
+        let tokenUsed = apiToken
         let (data, httpResponse) = try await performRequest(request)
 
         // Fast path: not unauthorized, return as-is.
@@ -354,46 +358,40 @@ actor APIClient {
             return (data, httpResponse)
         }
 
-        // JWT with no refresh capability — let the caller see it.
-        guard refreshToken != nil else {
-            notifySessionExpired()
-            return (data, httpResponse)
-        }
-
-        // Try to refresh the JWT once. Snapshot the token we used so we can
-        // tell whether a concurrent caller already refreshed for us while we
-        // were awaiting elsewhere.
-        let tokenBeforeRefresh = apiToken
-        do {
-            try await sharedRefresh()
-        } catch NetworkError.unauthorized {
-            // The server explicitly rejected the refresh — session is truly
-            // unrecoverable, kick the user to login.
-            notifySessionExpired()
-            return (data, httpResponse)
-        } catch {
-            // Transient failure during refresh (offline, timeout, 5xx) — don't
-            // wipe the session. Surface the underlying error so the UI can show
-            // "try again" instead of bouncing to the login screen.
-            throw error
-        }
-
-        // If neither our refresh nor a concurrent one updated the token, the
-        // session is unrecoverable.
-        guard apiToken != tokenBeforeRefresh else {
-            notifySessionExpired()
-            return (data, httpResponse)
+        // The session only ends when the refresh token itself is rejected (or
+        // there is none to try). A concurrent caller may already have
+        // refreshed: then the live token differs from the one this request
+        // used and a plain retry is enough, no second refresh. Comparing the
+        // token before and after a refresh is not safe, because a server can
+        // legitimately hand back the same JWT within one second.
+        if apiToken == tokenUsed {
+            guard refreshToken != nil else {
+                notifySessionExpired()
+                return (data, httpResponse)
+            }
+            do {
+                try await sharedRefresh()
+            } catch NetworkError.unauthorized {
+                // The server explicitly rejected the refresh: the session is
+                // truly unrecoverable, send the user to login.
+                notifySessionExpired()
+                return (data, httpResponse)
+            } catch {
+                // Transient failure during refresh (offline, timeout, 5xx):
+                // keep the session and surface the underlying error.
+                throw error
+            }
         }
 
         // Rebuild the request so the new bearer token is attached, then retry.
         let retryRequest = try build()
         let (retryData, retryResponse) = try await performRequest(retryRequest)
 
-        // If the retry also 401s (server raced the rotation, or the new token
-        // is somehow already invalid), don't loop — treat the session as
-        // unrecoverable so AppState shows the login screen.
+        // A 401 on a freshly refreshed token is not proof that the session is
+        // dead (the route may refuse this user), and the refresh token was
+        // accepted a moment ago. Fail this one request, never the session.
         if retryResponse.statusCode == 401 {
-            notifySessionExpired()
+            throw NetworkError.serverError(statusCode: 401, message: nil)
         }
         return (retryData, retryResponse)
     }
@@ -590,8 +588,15 @@ actor APIClient {
         _ endpointBuilder: (Int, Int) -> Endpoint,
         perPage: Int = 100
     ) async throws -> [T] {
-        let (firstItems, totalPages) = try await fetchPage(endpointBuilder(1, perPage)) as ([T], Int)
-        guard totalPages > 1, !firstItems.isEmpty else { return firstItems }
+        let (firstItems, reportedPages) = try await fetchPage(endpointBuilder(1, perPage)) as ([T], Int?)
+        guard !firstItems.isEmpty else { return firstItems }
+        // An envelope without a page count used to read as "one page", which
+        // silently dropped everything after the first 50 tasks. Walk the pages
+        // instead until one comes back short or empty.
+        guard let totalPages = reportedPages else {
+            return try await fetchPagesUntilShort(first: firstItems, endpointBuilder, perPage: perPage)
+        }
+        guard totalPages > 1 else { return firstItems }
 
         let endpoints = (2 ... totalPages).map { endpointBuilder($0, perPage) }
         var pages = [[T]](repeating: [], count: endpoints.count)
@@ -615,16 +620,50 @@ actor APIClient {
         return firstItems + pages.flatMap { $0 }
     }
 
+    /// Smallest first page that can still have a successor when the server
+    /// gave no page count. Vikunja pages hold 50 by default.
+    static let minimumFullPageSize = 20
+
+    /// Upper bound on the pages read without a page count, so a server that
+    /// ignores `page` cannot keep this loop going.
+    static let maxUncountedPages = 200
+
+    /// Reads pages one after another when the envelope has no `total_pages`:
+    /// stop at the first empty page, at a page shorter than the first one, or
+    /// at a page that starts with the same item as the previous one (a server
+    /// that ignores `page`).
+    private func fetchPagesUntilShort<T: Decodable & Sendable>(
+        first: [T],
+        _ endpointBuilder: (Int, Int) -> Endpoint,
+        perPage: Int
+    ) async throws -> [T] {
+        guard first.count >= Self.minimumFullPageSize else { return first }
+        var all = first
+        var previousHead = String(describing: first[0])
+        var page = 2
+        while page <= Self.maxUncountedPages {
+            let (items, _) = try await fetchPage(endpointBuilder(page, perPage)) as ([T], Int?)
+            guard let head = items.first else { break }
+            let headDescription = String(describing: head)
+            if headDescription == previousHead { break }
+            all += items
+            previousHead = headDescription
+            if items.count < first.count { break }
+            page += 1
+        }
+        return all
+    }
+
     /// How many pages `fetchAllPages` reads at once. Enough to hide the
     /// round trips without hammering a small self-hosted server.
     static let maxConcurrentPages = 4
 
-    private func fetchPage<T: Decodable>(_ endpoint: Endpoint) async throws -> ([T], Int) {
+    private func fetchPage<T: Decodable>(_ endpoint: Endpoint) async throws -> ([T], Int?) {
         let (data, httpResponse) = try await executeWithRefresh { try self.buildRequest(for: endpoint) }
         let responseData = try handleResponse(data: data, httpResponse: httpResponse)
         do {
             let page = try decoder.decode(ListPage<T>.self, from: responseData)
-            return (page.items ?? [], page.totalPages ?? 1)
+            return (page.items ?? [], page.totalPages)
         } catch {
             throw NetworkError.decodingError(error)
         }

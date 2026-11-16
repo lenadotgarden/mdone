@@ -17,8 +17,22 @@ enum ThingsCheckboxState: Equatable {
     }
 }
 
+/// The checkmark as a path, so it can be drawn stroke by stroke with `trim`.
+private struct ThingsCheckmarkShape: Shape {
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        path.move(to: CGPoint(x: rect.minX + rect.width * 0.06, y: rect.minY + rect.height * 0.56))
+        path.addLine(to: CGPoint(x: rect.minX + rect.width * 0.38, y: rect.minY + rect.height * 0.88))
+        path.addLine(to: CGPoint(x: rect.minX + rect.width * 0.94, y: rect.minY + rect.height * 0.14))
+        return path
+    }
+}
+
 /// The to-do checkbox. Pass `action` to make it tappable, nil to display only.
 /// `isDashed` draws the dashed outline of a Someday to-do (seen on the Mac captures).
+///
+/// Completing fills the box and draws the checkmark in about a quarter of a second
+/// (`ThingsMotion.checkDraw`); with Reduce Motion on, both happen at once.
 struct ThingsCheckbox: View {
     let state: ThingsCheckboxState
     var size: CGFloat = ThingsMetrics.Checkbox.size
@@ -27,6 +41,22 @@ struct ThingsCheckbox: View {
 
     @Environment(\.colorScheme) private var scheme
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    /// How much of the checkmark is drawn, 0 to 1. A box that is already done when it
+    /// first appears starts at 1, so only a tick the user makes animates.
+    @State private var drawProgress: CGFloat
+
+    init(
+        state: ThingsCheckboxState,
+        size: CGFloat = ThingsMetrics.Checkbox.size,
+        action: (() -> Void)? = nil,
+        isDashed: Bool = false
+    ) {
+        self.state = state
+        self.size = size
+        self.action = action
+        self.isDashed = isDashed
+        _drawProgress = State(initialValue: state == .done ? 1 : 0)
+    }
 
     private var palette: ThingsPalette { ThingsPalette(scheme) }
 
@@ -54,6 +84,11 @@ struct ThingsCheckbox: View {
         .frame(width: size, height: size)
         .contentShape(Rectangle())
         .animation(ThingsMotion.resolved(ThingsMotion.checkboxToggle, reduceMotion: reduceMotion), value: state)
+        .onChange(of: state) { _, newState in
+            withAnimation(ThingsMotion.resolved(ThingsMotion.checkDraw, reduceMotion: reduceMotion)) {
+                drawProgress = (newState == .done) ? 1 : 0
+            }
+        }
     }
 
     @ViewBuilder
@@ -94,10 +129,20 @@ struct ThingsCheckbox: View {
     private var glyph: some View {
         switch state {
         case .done:
-            Image(systemName: ThingsIcons.checkmark)
-                .font(.system(size: size * ThingsMetrics.Checkbox.glyphScale, weight: .bold))
-                .foregroundStyle(Color.white)
-                .transition(.scale(scale: 0.3).combined(with: .opacity))
+            ThingsCheckmarkShape()
+                .trim(from: 0, to: drawProgress)
+                .stroke(
+                    Color.white,
+                    style: StrokeStyle(
+                        lineWidth: max(size * ThingsMetrics.Checkbox.checkStrokeScale, 1),
+                        lineCap: .round,
+                        lineJoin: .round
+                    )
+                )
+                .frame(
+                    width: size * ThingsMetrics.Checkbox.glyphScale,
+                    height: size * ThingsMetrics.Checkbox.glyphScale
+                )
         case .cancelled:
             Image(systemName: ThingsIcons.cancelled)
                 .font(.system(size: size * ThingsMetrics.Checkbox.glyphScale, weight: .bold))

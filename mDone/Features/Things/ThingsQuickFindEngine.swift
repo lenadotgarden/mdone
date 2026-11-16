@@ -125,8 +125,13 @@ enum ThingsQuickFindEngine {
     }
 
     private static func rank(_ title: String, _ needle: String) -> Int? {
+        rank(title, foldedKey: fold(needle))
+    }
+
+    /// `rank` with the needle already folded, so a search over thousands of
+    /// to-dos folds it once instead of once per title.
+    private static func rank(_ title: String, foldedKey key: String) -> Int? {
         let lower = fold(title)
-        let key = fold(needle)
         if key.isEmpty { return nil }
         if lower.hasPrefix(key) { return 0 }
         let words = lower.components(separatedBy: CharacterSet.alphanumerics.inverted)
@@ -139,8 +144,9 @@ enum ThingsQuickFindEngine {
 
     private static func sortedByRank<T>(_ items: [(T, String)], _ needle: String) -> [T] {
         var ranked: [(item: T, rank: Int, index: Int)] = []
+        let key = fold(needle)
         for (index, entry) in items.enumerated() {
-            if let value = rank(entry.1, needle) {
+            if let value = rank(entry.1, foldedKey: key) {
                 ranked.append((entry.0, value, index))
             }
         }
@@ -161,8 +167,9 @@ enum ThingsQuickFindEngine {
     private static func projectResults(_ needle: String, projects: [Project]) -> [ThingsQuickFindResult] {
         let real = projects.filter { $0.id > 0 && $0.isArchived != true }
         let pairs = real.map { ($0, $0.title) }
+        let areaIDs = Set(ThingsProjectTree.build(projects: projects, inboxProjectID: nil).areas.map { $0.project.id })
         return sortedByRank(pairs, needle).map { project in
-            let isArea = ThingsProjectMeta.isArea(project)
+            let isArea = areaIDs.contains(project.id) || ThingsProjectMeta.isArea(project)
             return ThingsQuickFindResult(
                 id: "project.\(project.id)",
                 target: isArea ? .area(project.id) : .project(project.id),
@@ -183,17 +190,26 @@ enum ThingsQuickFindEngine {
     }
 
     private static func todoResults(_ needle: String, tasks: [VTask], projects: [Project]) -> [ThingsQuickFindResult] {
+        let key = fold(needle)
         let open = ThingsChecklist.topLevel(tasks).filter { !$0.done }
         let matching = open.filter { task in
-            rank(task.title, needle) != nil || tagTitles(of: task).contains { rank($0, needle) != nil }
+            rank(task.title, foldedKey: key) != nil
+                || tagTitles(of: task).contains { rank($0, foldedKey: key) != nil }
         }
         let pairs = matching.map { ($0, $0.title) }
         let byTitle = sortedByRank(pairs, needle)
-        let byTag = matching.filter { task in !byTitle.contains(where: { $0.id == task.id }) }
+        // Sets and dictionaries keep this linear: with a one letter query most
+        // of the account matches, and a scan per task was quadratic.
+        let titleIDs = Set(byTitle.map { $0.id })
+        let byTag = matching.filter { !titleIDs.contains($0.id) }
+        var projectTitles: [Int64: String] = [:]
+        for project in projects where projectTitles[project.id] == nil {
+            projectTitles[project.id] = project.title
+        }
         return (byTitle + byTag).map { task in
-            let project = projects.first { $0.id == task.projectId }
-            return ThingsQuickFindResult(
-                id: "todo.\(task.id)", target: .todo(task.id), title: task.title, subtitle: project?.title
+            ThingsQuickFindResult(
+                id: "todo.\(task.id)", target: .todo(task.id), title: task.title,
+                subtitle: projectTitles[task.projectId]
             )
         }
     }

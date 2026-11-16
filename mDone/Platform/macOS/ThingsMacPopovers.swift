@@ -2,99 +2,109 @@ import SwiftUI
 
 #if os(macOS)
 
-/// The When popover (spec 04 section 4): Today, This Evening, Someday, a month
-/// calendar and Clear. The natural language field and Add Reminder are TODOs.
-struct ThingsMacWhenPopover: View {
-    let task: VTask
-    let model: ThingsMacModel
-    let onClose: () -> Void
-
-    @State private var date: Date
-
-    init(task: VTask, model: ThingsMacModel, onClose: @escaping () -> Void) {
-        self.task = task
-        self.model = model
-        self.onClose = onClose
-        _date = State(initialValue: task.effectiveStartDate ?? Date())
-    }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: ThingsMetrics.Spacing.s) {
-            choice(ThingsIcons.today, String(localized: "Today"), .today)
-            choice(ThingsIcons.evening, String(localized: "This Evening"), .thisEvening)
-            choice(ThingsIcons.someday, String(localized: "Someday"), .someday)
-            Divider()
-            DatePicker("", selection: $date, displayedComponents: .date)
-                .datePickerStyle(.graphical)
-                .labelsHidden()
-            HStack {
-                Button(String(localized: "Clear")) { apply(ThingsWhen.none) }
-                Spacer()
-                Button(String(localized: "Set Date")) {
-                    apply(.date(Calendar.current.startOfDay(for: date)))
-                }
-                .keyboardShortcut(.defaultAction)
-            }
-        }
-        .padding(ThingsMetrics.Spacing.m)
-        .frame(width: 260)
-    }
-
-    private func choice(_ symbol: String, _ title: String, _ when: ThingsWhen) -> some View {
-        Button {
-            apply(when)
-        } label: {
-            Label(title, systemImage: symbol)
-                .frame(maxWidth: .infinity, alignment: .leading)
-        }
-        .buttonStyle(.plain)
-    }
-
-    private func apply(_ when: ThingsWhen) {
-        let listModel = model.activeViewModel
-        let target = task
-        Task { @MainActor in
-            await listModel.schedule(target, when: when)
-        }
-        onClose()
-    }
-}
-
-/// The Deadline popover (spec 04 section 4): a month calendar and Clear.
+/// The Deadline popover (Shift Cmd D, spec 04 section 4): a header field "Deadline" with the
+/// flag, a month calendar (today filled blue) and a Clear button. Arrows move over the grid,
+/// Return picks, Esc closes; typing a date or a word such as "friday" picks that day.
 struct ThingsMacDeadlinePopover: View {
     let task: VTask
     let model: ThingsMacModel
     let onClose: () -> Void
 
-    @State private var date: Date
+    @State private var typed = ""
+    @State private var month: Date
+    @State private var focusDay: Date
+    @FocusState private var fieldFocused: Bool
+    @Environment(\.colorScheme) private var scheme
 
     init(task: VTask, model: ThingsMacModel, onClose: @escaping () -> Void) {
         self.task = task
         self.model = model
         self.onClose = onClose
-        _date = State(initialValue: task.effectiveDueDate ?? Date())
+        let calendar = Calendar.current
+        let start = task.effectiveDueDate.map { calendar.startOfDay(for: $0) } ?? calendar.startOfDay(for: Date())
+        _month = State(initialValue: start)
+        _focusDay = State(initialValue: start)
+    }
+
+    private var palette: ThingsPalette { ThingsPalette(scheme) }
+
+    private var live: VTask {
+        model.appState.tasks.first(where: { $0.id == task.id }) ?? task
+    }
+
+    private var selectedDay: Date? {
+        ThingsDeadline.day(of: live.dueDate, calendar: Calendar.current)
+    }
+
+    private var typedTrimmed: String {
+        typed.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: ThingsMetrics.Spacing.s) {
-            DatePicker("", selection: $date, displayedComponents: .date)
-                .datePickerStyle(.graphical)
-                .labelsHidden()
-            HStack {
-                Button(String(localized: "Clear")) {
-                    model.setDeadline(nil, for: task)
-                    onClose()
-                }
-                Spacer()
-                Button(String(localized: "Set Deadline")) {
-                    model.setDeadline(ThingsWhen.noonLocal(date, calendar: Calendar.current), for: task)
-                    onClose()
-                }
-                .keyboardShortcut(.defaultAction)
+        VStack(alignment: .leading, spacing: ThingsMetrics.Spacing.xs) {
+            header
+            ThingsCalendarGrid(
+                month: $month,
+                selected: selectedDay,
+                focused: typed.isEmpty ? focusDay : nil,
+                todayStyle: .filled,
+                onPick: { set($0) }
+            )
+            .padding(.vertical, ThingsMetrics.Spacing.xs)
+            ThingsDatePopoverClearButton {
+                model.setDeadline(nil, for: live)
+                onClose()
             }
         }
-        .padding(ThingsMetrics.Spacing.m)
-        .frame(width: 260)
+        .padding(ThingsMetrics.DatePopover.padding)
+        .frame(width: ThingsMetrics.DatePopover.width)
+        .onAppear { fieldFocused = true }
+        .onExitCommand { onClose() }
+        .onChange(of: focusDay) { _, day in
+            if !ThingsCalendarMonth.sameMonth(day, month, calendar: Calendar.current) { month = day }
+        }
+    }
+
+    private var header: some View {
+        HStack(spacing: ThingsMetrics.Spacing.s) {
+            Image(systemName: ThingsIcons.deadlineFlag)
+                .font(.system(size: ThingsMetrics.Row.indicatorIconSize + 2))
+                .foregroundStyle(palette[.textSecondary])
+            ZStack(alignment: .leading) {
+                if typed.isEmpty {
+                    Text(String(localized: "Deadline"))
+                        .font(ThingsTypography.popoverTitle)
+                        .foregroundStyle(palette[.textPrimary])
+                        .allowsHitTesting(false)
+                }
+                TextField(text: $typed, label: { EmptyView() })
+                    .textFieldStyle(.plain)
+                    .font(ThingsTypography.popoverTitle)
+                    .focused($fieldFocused)
+                    .onSubmit { submit() }
+                    .thingsDateArrowKeys(isEnabled: typed.isEmpty) { direction in
+                        focusDay = ThingsCalendarMonth.moveFocus(focusDay, direction, calendar: Calendar.current)
+                    }
+                    .accessibilityLabel(Text(String(localized: "Deadline")))
+            }
+        }
+        .padding(.horizontal, ThingsMetrics.Spacing.s)
+        .frame(height: ThingsMetrics.DatePopover.rowHeight)
+    }
+
+    private func submit() {
+        if typedTrimmed.isEmpty {
+            set(focusDay)
+            return
+        }
+        if let day = ThingsWhenInput.parseDay(typedTrimmed) {
+            set(day)
+        }
+    }
+
+    private func set(_ day: Date) {
+        model.setDeadline(ThingsWhen.noonLocal(day, calendar: Calendar.current), for: live)
+        onClose()
     }
 }
 

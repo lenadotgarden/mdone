@@ -39,6 +39,7 @@ struct ThingsMacRootView: View {
         .focusedSceneValue(\.thingsMac, model)
         .thingsMacSheets(model: model)
         .thingsTypeTravel(model: model)
+        .thingsMacSpaceKey(model: model)
         .thingsMacSystemAlerts(appState: model.appState)
         .task {
             await model.appState.refreshAll()

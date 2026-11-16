@@ -107,6 +107,7 @@ final class CachedProject {
     var position: Double?
     var created: Date?
     var updated: Date?
+    var parentProjectId: Int64?
 
     init(from project: Project) {
         id = project.id
@@ -118,6 +119,7 @@ final class CachedProject {
         position = project.position
         created = project.created
         updated = project.updated
+        parentProjectId = project.parentProjectId
     }
 
     func toProject() -> Project {
@@ -130,7 +132,8 @@ final class CachedProject {
             isFavorite: isFavorite,
             position: position,
             created: created,
-            updated: updated
+            updated: updated,
+            parentProjectId: parentProjectId
         )
     }
 
@@ -143,6 +146,7 @@ final class CachedProject {
         position = project.position
         created = project.created
         updated = project.updated
+        parentProjectId = project.parentProjectId
     }
 }
 

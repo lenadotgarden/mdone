@@ -18,8 +18,22 @@ final class AppState {
     var activeError: NetworkError?
 
     var tasks: [VTask] = [] {
-        didSet { listRevision &+= 1 }
+        didSet {
+            listRevision &+= 1
+            tasksRevision &+= 1
+        }
     }
+
+    /// Bumped by every change of `tasks`. Not observed on its own: a reader
+    /// that wants to redraw on a change reads `tasks`, and uses this counter
+    /// as a cheap key to memoize what it derives from them
+    /// (`ThingsListsCache`) instead of comparing arrays.
+    @ObservationIgnored private(set) var tasksRevision: UInt64 = 0
+
+    /// Memo of the Things lists derived from `tasks`, shared by every list
+    /// view model so the sidebar badges, the list on screen and the project
+    /// progress are computed once per change instead of once per redraw.
+    @ObservationIgnored let thingsCache = ThingsListsCache()
 
     var projects: [Project] = []
     /// Archived projects, loaded on demand for the Archived view. Kept separate
@@ -626,6 +640,8 @@ final class AppState {
         }
         // Let the next session hydrate from whatever cache survives.
         hasHydratedFromCache = false
+        lastPersistedFingerprint = nil
+        lastSuccessfulRefresh = nil
 
         // Clear cached widget data and refresh widgets
         SharedKeys.sharedDefaults.removeObject(forKey: SharedKeys.widgetDataKey)
@@ -662,19 +678,94 @@ final class AppState {
     @MainActor
     private func persistToCache() {
         guard let syncService else { return }
+        // Rewriting thousands of SwiftData rows on the main thread froze the
+        // window after every refresh, whether or not anything had changed.
+        let fingerprint = Self.cacheFingerprint(tasks: tasks, projects: projects, labels: labels)
+        if fingerprint == lastPersistedFingerprint { return }
         do {
+            lastPersistedFingerprint = fingerprint
             try syncService.cacheTasks(tasks)
             try syncService.cacheProjects(projects)
             try syncService.cacheLabels(labels)
         } catch {
+            lastPersistedFingerprint = nil
             #if DEBUG
             print("[mDone] persistToCache failed: \(error)")
             #endif
         }
     }
 
+    /// A cheap hash of what the cache stores, to tell "nothing new" from a
+    /// change. Covers the fields that change when a task is edited anywhere.
+    static func cacheFingerprint(tasks: [VTask], projects: [Project], labels: [VLabel]) -> Int {
+        var hasher = Hasher()
+        hasher.combine(tasks.count)
+        for task in tasks {
+            hasher.combine(task.id)
+            hasher.combine(task.updated)
+            hasher.combine(task.done)
+            hasher.combine(task.title)
+            hasher.combine(task.projectId)
+            hasher.combine(task.dueDate)
+            hasher.combine(task.startDate)
+            hasher.combine(task.labels?.count ?? 0)
+        }
+        hasher.combine(projects.count)
+        for project in projects {
+            hasher.combine(project.id)
+            hasher.combine(project.title)
+            hasher.combine(project.updated)
+            hasher.combine(project.parentProjectId)
+        }
+        hasher.combine(labels.count)
+        for label in labels {
+            hasher.combine(label.id)
+            hasher.combine(label.title)
+        }
+        return hasher.finalize()
+    }
+
+    /// The refresh in flight, if any. Callers that arrive while it runs wait
+    /// for it instead of starting a second full download: a launch, a window
+    /// activation and a pull to refresh used to run side by side and write the
+    /// same lists over each other.
+    @ObservationIgnored private var refreshTask: Task<Void, Never>?
+
+    /// When the last refresh succeeded.
+    @ObservationIgnored private(set) var lastSuccessfulRefresh: Date?
+
+    /// Hash of what `persistToCache` last wrote, to skip a rewrite of every
+    /// cached row when a refresh found nothing new.
+    @ObservationIgnored private var lastPersistedFingerprint: Int?
+
     @MainActor
     func refreshAll() async {
+        if let running = refreshTask {
+            await running.value
+            return
+        }
+        let task = Task { @MainActor [self] in
+            await performRefreshAll()
+            refreshTask = nil
+        }
+        refreshTask = task
+        await task.value
+    }
+
+    /// A refresh that is skipped when one succeeded less than `minInterval`
+    /// seconds ago. For triggers that fire often without the user asking, such
+    /// as the window becoming active: coming back from another app on every
+    /// Cmd-Tab must not re-download every task.
+    @MainActor
+    func refreshAllIfStale(minInterval: TimeInterval = 30) async {
+        if let last = lastSuccessfulRefresh, Date().timeIntervalSince(last) < minInterval {
+            return
+        }
+        await refreshAll()
+    }
+
+    @MainActor
+    private func performRefreshAll() async {
         #if DEBUG
         print("[mDone] refreshAll() called")
         #endif
@@ -732,22 +823,24 @@ final class AppState {
             async let fetchedProjects = projectService.fetchProjects()
             async let fetchedLabels = labelService.fetchLabels()
 
-            tasks = try await fetchedTasks
+            // Wait for all three, then publish them together. Publishing the
+            // tasks before the projects arrived made every view recompute
+            // twice, and showed an unresolved Inbox in between (every task
+            // briefly in Anytime).
+            let freshTasks = try await fetchedTasks
             await updateRetryState()
-            #if DEBUG
-            print("[mDone] refreshAll: got \(tasks.count) tasks")
-            #endif
-            projects = try await fetchedProjects
+            let freshProjects = try await fetchedProjects
+            let freshLabels = try await fetchedLabels
+            await updateRetryState()
+            // Vikunja can answer the same task on two pages when the list
+            // shifts between page reads; a duplicate id breaks a ForEach.
+            tasks = Self.uniquedById(freshTasks)
+            projects = freshProjects
+            labels = freshLabels
             // Siri's vocabulary for "add a task to <project> in mDone".
             MDoneAppShortcuts.updateAppShortcutParameters()
-            await updateRetryState()
             #if DEBUG
-            print("[mDone] refreshAll: got \(projects.count) projects")
-            #endif
-
-            labels = try await fetchedLabels
-            #if DEBUG
-            print("[mDone] refreshAll: got \(labels.count) labels")
+            print("[mDone] refreshAll: got \(tasks.count) tasks, \(projects.count) projects, \(labels.count) labels")
             #endif
 
             await refreshCachedProjectOrders()
@@ -760,6 +853,7 @@ final class AppState {
             print("[mDone] refreshAll: SUCCESS")
             #endif
 
+            lastSuccessfulRefresh = Date()
             persistToCache()
             pushWidgetData()
             WidgetCenter.shared.reloadAllTimelines()
@@ -776,12 +870,11 @@ final class AppState {
             #if DEBUG
             print("[mDone] refreshAll: NetworkError: \(error)")
             #endif
-            if case .unauthorized = error {
-                #if DEBUG
-                print("[mDone] refreshAll: got .unauthorized, expiring session")
-                #endif
-                await expireSession()
-            }
+            // No session teardown here. `.unauthorized` reaches this point
+            // only after APIClient has already fired `onSessionExpired` (the
+            // refresh token itself was rejected), which is the one place that
+            // ends a session. Expiring again from a bare status would turn any
+            // stray 401 into a logout.
             markCachedIfUnreachable(error)
             handleError(error)
         } catch {

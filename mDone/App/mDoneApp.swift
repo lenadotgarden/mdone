@@ -150,7 +150,9 @@ struct mDoneApp: App {
         }
         .onChange(of: scenePhase) { _, newPhase in
             if newPhase == .active, appState.isAuthenticated {
-                Task { await appState.refreshAll() }
+                // Throttled: every return from another app is an activation,
+                // and a full download each time made the app feel slow.
+                Task { await appState.refreshAllIfStale() }
                 #if os(iOS)
                 Task { await focusOutbox.drain() }
                 #endif

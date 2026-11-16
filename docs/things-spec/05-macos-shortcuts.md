@@ -185,8 +185,8 @@ D'autres syntaxes Markdown existent sans raccourci (Markdown Guide : https://cul
 | Esc dans Quick Entry | ferme et jette | `[VERIFIED 2249437]` |
 | Cmd Return dans Quick Entry | ferme et enregistre | `[VERIFIED 2249437]` |
 | Cmd , | Settings (standard macOS) | `[FROM-MEMORY]` |
-| Cmd Z / Shift Cmd Z | Undo / Redo | `[FROM-MEMORY]` |
-| Delete (touche) | supprime l'item sélectionné (vers Trash) | `[FROM-MEMORY]` |
+| Cmd Z / Shift Cmd Z | Undo / Redo (the Edit menu names the step) | `[FROM-MEMORY]`, implemented |
+| Delete, Backspace (no fn needed), Cmd Backspace | deletes the selected item at once, no confirmation, undo brings it back | `[FROM-MEMORY]`, implemented |
 | Opt + clic checkbox | cancel | `[VERIFIED 2785159]` |
 
 ## Équivalents pour fork SwiftUI iOS clavier externe
@@ -196,3 +196,19 @@ La page renvoie à une liste "iPhone, iPad & Vision" (onglet sur la même page, 
 ## Récapitulatif [UNSURE]
 
 Liste des raccourcis iPhone/iPad (onglet JS non lu) ; raccourcis Heading 3 à 6 (non listés, "...").
+
+## Fork status of the list keys (Mac)
+
+Handled by the key handler of the list (`ThingsMacTodoList.handleKey`), because a key without Cmd or Ctrl must not be a menu shortcut (it would fire while typing):
+
+| Key | Effect in the fork |
+|-|-|
+| Delete, Backspace, Forward Delete, Cmd Backspace | Deletes the selected to-do at once (first press only), selects the next row. Undo recreates it, id changes. |
+| Space | New empty to-do below the selection (same project, section and When). With only a project selected: top of the project. Does nothing while a text field is editing. |
+| Cmd Up, Cmd Down | Move the selected to-do one place. |
+| Opt Cmd Up, Opt Cmd Down | Move it to the top or the bottom of its section. Ignored with no selection, in a read-only section, during a drag, while a save runs. |
+| Return, Esc | Open the card, clear the selection. In the card: Esc or Cmd Return saves and closes. |
+
+Menu shortcuts: Cmd Z and Shift Cmd Z (Edit > Undo, Redo), Cmd S (When popover on the selected row or open card), Shift Cmd D (Deadline popover), Cmd T, Cmd E, Cmd R, Cmd O, Ctrl ] and the other date shifts.
+
+In the When popover: type a date or a word (natural language), arrows move over the month grid, Return picks, Esc closes. In the Deadline popover: the same, Return sets the deadline.

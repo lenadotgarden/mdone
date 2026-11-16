@@ -62,3 +62,25 @@ final class ThingsShortcutTableTests: XCTestCase {
         XCTAssertEqual(chord.display, "\u{2303}\u{2325}\u{21E7}\u{2318}N")
     }
 }
+
+final class ThingsShortcutTableEditingTests: XCTestCase {
+    func testUndoRedoAndSpaceChords() {
+        XCTAssertEqual(ThingsShortcutTable.chord(for: .undo), ThingsKeyChord("z", command: true))
+        XCTAssertEqual(ThingsShortcutTable.chord(for: .redo), ThingsKeyChord("z", shift: true, command: true))
+        XCTAssertEqual(ThingsShortcutTable.chord(for: .newTodoBelow), ThingsKeyChord("space"))
+        XCTAssertEqual(ThingsShortcutTable.chord(for: .deleteItem), ThingsKeyChord("delete"))
+    }
+
+    func testUndoAndRedoAreMenuSafeButSpaceAndDeleteAreNot() {
+        XCTAssertEqual(ThingsShortcutTable.command(for: ThingsKeyChord("z", command: true)), .undo)
+        // Space and Delete have no Command or Control: the list handles them, not the menu.
+        XCTAssertFalse(ThingsShortcutTable.chord(for: .newTodoBelow)?.command ?? true)
+        XCTAssertFalse(ThingsShortcutTable.chord(for: .deleteItem)?.command ?? true)
+    }
+
+    func testReorderChordsAreImplemented() {
+        for id in [ThingsCommandID.moveItemUp, .moveItemDown, .moveItemToTop, .moveItemToBottom] {
+            XCTAssertEqual(ThingsShortcutTable.entry(for: id)?.isImplemented, true, "\(id)")
+        }
+    }
+}

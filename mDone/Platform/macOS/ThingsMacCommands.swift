@@ -1,6 +1,7 @@
 import SwiftUI
 
 #if os(macOS)
+import AppKit
 
 extension ThingsKeyChord {
     /// The SwiftUI key of the chord.
@@ -65,6 +66,7 @@ struct ThingsMacCommands: Commands {
         CommandGroup(replacing: .appSettings) {
             ThingsCommandButton(id: .settings, title: String(localized: "Settings..."), model: model) { $0.sheet = .settings }
         }
+        CommandGroup(replacing: .undoRedo) { ThingsUndoMenuItems(model: model) }
         CommandGroup(after: .pasteboard) { ThingsEditMenuItems(model: model) }
         CommandMenu(String(localized: "Items")) { ThingsItemsMenuItems(model: model) }
         CommandGroup(after: .sidebar) { ThingsGoMenuItems(model: model) }
@@ -91,14 +93,54 @@ private struct ThingsFileMenuItems: View {
     }
 }
 
+/// Edit > Undo and Redo (Cmd Z, Shift Cmd Z) with the name of the step: "Undo Complete
+/// To-Do". A focused text field keeps its own undo (`undoFromMenu` forwards to it). In the
+/// classic interface the items forward to the responder chain, as the standard ones did.
+private struct ThingsUndoMenuItems: View {
+    let model: ThingsMacModel?
+
+    var body: some View {
+        Button(model?.undoMenuTitle ?? String(localized: "Undo")) {
+            if let model = model {
+                model.undoFromMenu()
+            } else {
+                NSApp.sendAction(Selector(("undo:")), to: nil, from: nil)
+            }
+        }
+        .keyboardShortcut("z", modifiers: .command)
+        .disabled(!undoEnabled)
+        Button(model?.redoMenuTitle ?? String(localized: "Redo")) {
+            if let model = model {
+                model.redoFromMenu()
+            } else {
+                NSApp.sendAction(Selector(("redo:")), to: nil, from: nil)
+            }
+        }
+        .keyboardShortcut("z", modifiers: [.command, .shift])
+        .disabled(!redoEnabled)
+    }
+
+    private var undoEnabled: Bool {
+        guard let model = model else { return true }
+        return model.canUndo || model.textEditingActive
+    }
+
+    private var redoEnabled: Bool {
+        guard let model = model else { return true }
+        return model.canRedo || model.textEditingActive
+    }
+}
+
 private struct ThingsEditMenuItems: View {
     let model: ThingsMacModel?
 
     var body: some View {
         Divider()
         ThingsCommandButton(id: .duplicate, title: String(localized: "Duplicate"), model: model) { $0.duplicateSelected() }
-        Button(String(localized: "Delete")) { model?.requestDeleteSelected() }
-            .disabled(model == nil)
+        // Delete has no menu shortcut: Backspace and Delete are handled by the list, so a
+        // text field keeps them. Things deletes at once and relies on undo.
+        Button(String(localized: "Delete")) { model?.deleteSelected() }
+            .disabled(model == nil || model?.selectedTaskID == nil)
         Divider()
         ThingsCommandButton(id: .quickFind, title: String(localized: "Quick Find"), model: model) { $0.showQuickFind = true }
     }

@@ -18,6 +18,11 @@ struct ThingsMacTodoEditor: View {
 
     @State private var title: String
     @State private var notes: String
+    /// What was last saved, so a second commit (Esc, then the card disappearing) sends nothing.
+    @State private var savedTitle: String
+    @State private var savedNotes: String
+    /// Checklist item titles being edited, by item id.
+    @State private var itemTitles: [Int64: String] = [:]
     @State private var checklistTitle = ""
     @State private var showChecklist = false
     @State private var showWhen = false
@@ -36,6 +41,8 @@ struct ThingsMacTodoEditor: View {
         self.model = model
         _title = State(initialValue: task.title)
         _notes = State(initialValue: task.userVisibleDescription ?? "")
+        _savedTitle = State(initialValue: task.title)
+        _savedNotes = State(initialValue: task.userVisibleDescription ?? "")
     }
 
     private var palette: ThingsPalette { ThingsPalette(scheme) }
@@ -54,6 +61,13 @@ struct ThingsMacTodoEditor: View {
         .onExitCommand {
             commit()
             model.collapseEditor()
+        }
+        // Esc inside the notes or a checklist field may not reach `onExitCommand`: the
+        // key handler covers it. Both are safe to run, a second commit sends nothing.
+        .onKeyPress(.escape) {
+            commit()
+            model.collapseEditor()
+            return .handled
         }
         .onDisappear { commit() }
         .onChange(of: model.commitRequest) { _, _ in
@@ -119,7 +133,7 @@ struct ThingsMacTodoEditor: View {
         return HStack(alignment: .center, spacing: ThingsMetrics.Row.checkboxTitleSpacing) {
             ThingsCheckbox(
                 state: ThingsRowMapper.checkboxState(for: task, isPendingDone: pending),
-                action: { model.activeViewModel.tapCheckbox(task) },
+                action: { model.tapCheckbox(task) },
                 isDashed: task.hasThingsSomedayLabel
             )
             TextField(String(localized: "New To-Do"), text: $title)
@@ -162,13 +176,19 @@ struct ThingsMacTodoEditor: View {
                         ThingsCheckbox(
                             state: item.done ? .done : .open,
                             size: ThingsMetrics.Checkbox.checklistItemSize,
-                            action: { toggle(item) }
+                            action: { model.toggleChecklistItem(item) }
                         )
-                        Text(verbatim: item.title)
+                        TextField(text: itemBinding(item), label: { EmptyView() })
+                            .textFieldStyle(.plain)
                             .font(ThingsTypography.todoTitle)
-                            .strikethrough(item.done)
                             .foregroundStyle(item.done ? palette[.textSecondary] : palette[.textPrimary])
+                            .onSubmit { renameItem(item) }
                         Spacer(minLength: 0)
+                    }
+                    .contextMenu {
+                        Button(String(localized: "Delete Checklist Item"), role: .destructive) {
+                            model.deleteChecklistItem(item, parent: task)
+                        }
                     }
                 }
                 TextField(String(localized: "Add checklist item"), text: $checklistTitle)
@@ -236,6 +256,12 @@ struct ThingsMacTodoEditor: View {
         return due.formatted(date: .abbreviated, time: .omitted)
     }
 
+    private var deadlineTint: ThingsColorToken {
+        let left = ThingsDeadline.daysLeft(dueDate: task.dueDate, now: Date(), calendar: Calendar.current)
+        guard let days = left else { return .textSecondary }
+        return days <= ThingsMetrics.Deadline.urgentThresholdDays ? .deadlineFlame : .textSecondary
+    }
+
     private var actionBar: some View {
         HStack(spacing: ThingsMetrics.Spacing.m) {
             whenButton
@@ -295,12 +321,14 @@ struct ThingsMacTodoEditor: View {
             showDeadline = true
         } label: {
             HStack(spacing: 4) {
+                // The flag and the text share one colour: grey while the deadline is ahead,
+                // red when it is today or past.
                 Image(systemName: ThingsIcons.deadlineFlag)
                     .font(.system(size: 11))
-                    .foregroundStyle(palette[.deadlineFlame])
+                    .foregroundStyle(palette[deadlineTint])
                 Text(verbatim: label)
                     .font(.system(size: 12))
-                    .foregroundStyle(palette[.textSecondary])
+                    .foregroundStyle(palette[deadlineTint])
             }
             .contentShape(Rectangle())
         }
@@ -366,10 +394,23 @@ struct ThingsMacTodoEditor: View {
         }
     }
 
-    private func toggle(_ item: VTask) {
-        let state = model.appState
-        Task { @MainActor in
-            await state.toggleTaskDone(item)
+    private func itemBinding(_ item: VTask) -> Binding<String> {
+        Binding(
+            get: { itemTitles[item.id] ?? item.title },
+            set: { itemTitles[item.id] = $0 }
+        )
+    }
+
+    private func renameItem(_ item: VTask) {
+        guard let edited = itemTitles[item.id] else { return }
+        itemTitles[item.id] = nil
+        model.renameChecklistItem(item, to: edited)
+    }
+
+    /// Saves the checklist titles that were typed but not submitted.
+    private func flushChecklistEdits() {
+        for item in ThingsChecklist.items(of: task) {
+            if itemTitles[item.id] != nil { renameItem(item) }
         }
     }
 
@@ -377,35 +418,48 @@ struct ThingsMacTodoEditor: View {
         let text = checklistTitle.trimmingCharacters(in: .whitespacesAndNewlines)
         checklistTitle = ""
         if text.isEmpty { return }
-        let state = model.appState
-        let parent = task
-        Task { @MainActor in
-            _ = await state.createSubtask(title: text, parent: parent)
-        }
+        model.addChecklistItem(title: text, to: task)
         focused = .checklist
     }
 
-    /// Saves the title and the notes when they changed. The estimate marker of
-    /// the description is kept, as `TaskDetailSheet` does.
+    /// Saves the title, the notes and the checklist titles when they changed, and records
+    /// one undo step for the title and notes. The estimate marker of the description is
+    /// kept, as `TaskDetailSheet` does. Called by Esc, Cmd Return and when the card goes
+    /// away: what was already saved is not sent twice.
     private func commit() {
+        flushChecklistEdits()
         let state = model.appState
         let id = task.id
         if !state.tasks.contains(where: { $0.id == id }) { return }
         var request = TaskUpdateRequest()
         var changed = false
         let trimmed = title.trimmingCharacters(in: .whitespacesAndNewlines)
-        if !trimmed.isEmpty && trimmed != task.title {
+        let oldTitle = savedTitle
+        let oldDescription = task.description
+        if !trimmed.isEmpty && trimmed != savedTitle {
             request.title = trimmed
+            savedTitle = trimmed
             changed = true
         }
-        if notes != (task.userVisibleDescription ?? "") {
+        if notes != savedNotes {
             let body: String? = notes.isEmpty ? nil : notes
             request.description = EstimateMarker.apply(task.estimatedSeconds, to: body) ?? ""
+            savedNotes = notes
             changed = true
         }
         if !changed { return }
+        let newTitle = request.title ?? oldTitle
+        let newDescription = request.description ?? oldDescription
+        let editedModel = model
         Task { @MainActor in
             await state.updateTask(id: id, request: request)
+            editedModel.recordEdit(
+                taskID: id,
+                oldTitle: oldTitle,
+                newTitle: newTitle,
+                oldDescription: oldDescription,
+                newDescription: newDescription
+            )
         }
     }
 }

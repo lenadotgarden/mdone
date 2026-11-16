@@ -30,26 +30,8 @@ enum ThingsListBuilder {
         now: Date,
         calendar: Calendar
     ) -> [ThingsListSection] {
-        let today = calendar.startOfDay(for: now)
-        switch list {
-        case .inbox:
-            let matching = tasks.filter { isInInbox($0, inboxProjectID: inboxProjectID, calendar: calendar) }
-            return single(id: "inbox", tasks: matching)
-        case .today:
-            return todaySections(tasks: tasks, today: today, calendar: calendar)
-        case .upcoming:
-            return upcomingSections(tasks: tasks, today: today, calendar: calendar)
-        case .anytime:
-            let matching = tasks.filter { task in
-                isAnytime(task, inboxProjectID: inboxProjectID, today: today, calendar: calendar)
-            }
-            return single(id: "anytime", tasks: matching)
-        case .someday:
-            let matching = tasks.filter { !$0.done && $0.hasThingsSomedayLabel }
-            return single(id: "someday", tasks: matching)
-        case .logbook:
-            return logbookSections(tasks: tasks, calendar: calendar)
-        }
+        let facts = prepare(tasks, calendar: calendar)
+        return sections(for: list, facts: facts, inboxProjectID: inboxProjectID, now: now, calendar: calendar)
     }
 
     /// The number of tasks in `list` (sum over its sections).
@@ -73,37 +55,120 @@ enum ThingsListBuilder {
         now: Date,
         calendar: Calendar
     ) -> [ThingsList: Int] {
-        var result: [ThingsList: Int] = [:]
+        snapshot(tasks: tasks, inboxProjectID: inboxProjectID, now: now, calendar: calendar).counts
+    }
+
+    /// Every list at once from a single pass over `tasks`: the per-task date
+    /// work (start day, deadline day, reserved labels) is done once and shared
+    /// by the six lists and their counts. This is what the view models cache.
+    static func snapshot(
+        tasks: [VTask],
+        inboxProjectID: Int64?,
+        now: Date,
+        calendar: Calendar
+    ) -> ThingsListSnapshot {
+        let facts = prepare(tasks, calendar: calendar)
+        var built: [ThingsList: [ThingsListSection]] = [:]
+        var counts: [ThingsList: Int] = [:]
         for list in ThingsList.allCases {
-            result[list] = count(
-                for: list, tasks: tasks, inboxProjectID: inboxProjectID, now: now, calendar: calendar
+            let result = sections(
+                for: list, facts: facts, inboxProjectID: inboxProjectID, now: now, calendar: calendar
+            )
+            built[list] = result
+            counts[list] = result.reduce(0) { $0 + $1.tasks.count }
+        }
+        return ThingsListSnapshot(sections: built, counts: counts)
+    }
+
+    // MARK: - Prepared facts
+
+    /// A task with the values every list rule reads, computed once.
+    private struct Facts {
+        let task: VTask
+        let startDay: Date?
+        let deadlineDay: Date?
+        let isSomeday: Bool
+        let isEvening: Bool
+    }
+
+    /// One pass over `tasks`. Days are memoized by instant, since the full-day
+    /// convention stores almost every date at 12:00.
+    private static func prepare(_ tasks: [VTask], calendar: Calendar) -> [Facts] {
+        var dayMemo: [TimeInterval: Date] = [:]
+        func day(_ date: Date?) -> Date? {
+            guard let valid = validDate(date) else { return nil }
+            let key = valid.timeIntervalSinceReferenceDate
+            if let known = dayMemo[key] { return known }
+            let computed = calendar.startOfDay(for: valid)
+            dayMemo[key] = computed
+            return computed
+        }
+        var result: [Facts] = []
+        result.reserveCapacity(tasks.count)
+        for task in tasks {
+            var isSomeday = false
+            var isEvening = false
+            if let labels = task.labels {
+                for label in labels {
+                    if ThingsReservedLabels.matches(label.title, ThingsReservedLabels.someday) { isSomeday = true }
+                    if ThingsReservedLabels.matches(label.title, ThingsReservedLabels.evening) { isEvening = true }
+                }
+            }
+            result.append(
+                Facts(
+                    task: task,
+                    startDay: day(task.startDate),
+                    deadlineDay: day(task.dueDate),
+                    isSomeday: isSomeday,
+                    isEvening: isEvening
+                )
             )
         }
         return result
     }
 
+    private static func sections(
+        for list: ThingsList,
+        facts: [Facts],
+        inboxProjectID: Int64?,
+        now: Date,
+        calendar: Calendar
+    ) -> [ThingsListSection] {
+        let today = calendar.startOfDay(for: now)
+        switch list {
+        case .inbox:
+            let matching = facts.filter { isInInbox($0, inboxProjectID: inboxProjectID) }.map { $0.task }
+            return single(id: "inbox", tasks: matching)
+        case .today:
+            return todaySections(facts: facts, today: today)
+        case .upcoming:
+            return upcomingSections(facts: facts, today: today, calendar: calendar)
+        case .anytime:
+            let matching = facts
+                .filter { isAnytime($0, inboxProjectID: inboxProjectID, today: today) }
+                .map { $0.task }
+            return single(id: "anytime", tasks: matching)
+        case .someday:
+            let matching = facts.filter { !$0.task.done && $0.isSomeday }.map { $0.task }
+            return single(id: "someday", tasks: matching)
+        case .logbook:
+            return logbookSections(tasks: facts.map { $0.task }, calendar: calendar)
+        }
+    }
+
     // MARK: - Dates
 
     /// `date` unless it is nil or the zero date.
-    private static func validDate(_ date: Date?, calendar: Calendar) -> Date? {
+    ///
+    /// Vikunja's zero date decodes to `Date.distantPast`; anything before about
+    /// the year 4 is treated the same way. A plain interval comparison, because
+    /// asking a `Calendar` for the year of every date of every task on every
+    /// build was a measurable cost.
+    private static func validDate(_ date: Date?) -> Date? {
         guard let date = date else { return nil }
         if date == Date.distantPast { return nil }
-        if calendar.component(.year, from: date) <= 1 { return nil }
+        if date.timeIntervalSinceReferenceDate < -63_000_000_000 { return nil }
         return date
-    }
-
-    /// The start of the day of `date`, nil when unset.
-    private static func dayOf(_ date: Date?, calendar: Calendar) -> Date? {
-        guard let valid = validDate(date, calendar: calendar) else { return nil }
-        return calendar.startOfDay(for: valid)
-    }
-
-    private static func startDay(_ task: VTask, calendar: Calendar) -> Date? {
-        dayOf(task.startDate, calendar: calendar)
-    }
-
-    private static func deadlineDay(_ task: VTask, calendar: Calendar) -> Date? {
-        dayOf(task.dueDate, calendar: calendar)
     }
 
     // MARK: - Membership rules
@@ -111,10 +176,10 @@ enum ThingsListBuilder {
     /// Inbox: an open task in the Inbox project with no When. A When is a start
     /// date, the Someday label or the Evening label. A deadline alone is not a
     /// When, so the task stays in the Inbox.
-    private static func isInInbox(_ task: VTask, inboxProjectID: Int64?, calendar: Calendar) -> Bool {
-        guard let inboxID = inboxProjectID, !task.done, task.projectId == inboxID else { return false }
-        if startDay(task, calendar: calendar) != nil { return false }
-        if task.hasThingsSomedayLabel || task.hasThingsEveningLabel { return false }
+    private static func isInInbox(_ fact: Facts, inboxProjectID: Int64?) -> Bool {
+        guard let inboxID = inboxProjectID, !fact.task.done, fact.task.projectId == inboxID else { return false }
+        if fact.startDay != nil { return false }
+        if fact.isSomeday || fact.isEvening { return false }
         return true
     }
 
@@ -127,10 +192,10 @@ enum ThingsListBuilder {
     /// start or due date reaches today.
     /// SPEC-UNSURE: the Someday label wins and removes a task from every list
     /// but Someday, even when its deadline is reached (07 section 8).
-    private static func isInToday(_ task: VTask, today: Date, calendar: Calendar) -> Bool {
-        guard !task.done, !task.hasThingsSomedayLabel else { return false }
-        if let start = startDay(task, calendar: calendar), start <= today { return true }
-        if let due = deadlineDay(task, calendar: calendar), due <= today { return true }
+    private static func isInToday(_ fact: Facts, today: Date) -> Bool {
+        guard !fact.task.done, !fact.isSomeday else { return false }
+        if let start = fact.startDay, start <= today { return true }
+        if let due = fact.deadlineDay, due <= today { return true }
         return false
     }
 
@@ -141,15 +206,10 @@ enum ThingsListBuilder {
     /// of the Inbox project that was given a When is in Anytime (or Upcoming).
     /// Anytime is one flat section: grouping by project needs project data that
     /// this pure layer does not take.
-    private static func isAnytime(
-        _ task: VTask,
-        inboxProjectID: Int64?,
-        today: Date,
-        calendar: Calendar
-    ) -> Bool {
-        guard !task.done, !task.hasThingsSomedayLabel else { return false }
-        if isInInbox(task, inboxProjectID: inboxProjectID, calendar: calendar) { return false }
-        if let start = startDay(task, calendar: calendar), start > today { return false }
+    private static func isAnytime(_ fact: Facts, inboxProjectID: Int64?, today: Date) -> Bool {
+        guard !fact.task.done, !fact.isSomeday else { return false }
+        if isInInbox(fact, inboxProjectID: inboxProjectID) { return false }
+        if let start = fact.startDay, start > today { return false }
         return true
     }
 
@@ -163,18 +223,17 @@ enum ThingsListBuilder {
     /// SPEC-UNSURE: an evening task with a future start date is not in Today yet.
     /// It shows in Upcoming and moves to the evening section on its day
     /// (06 section 4, 07 section 7).
-    private static func todaySections(tasks: [VTask], today: Date, calendar: Calendar) -> [ThingsListSection] {
-        let inToday = tasks.filter { isInToday($0, today: today, calendar: calendar) }
+    private static func todaySections(facts: [Facts], today: Date) -> [ThingsListSection] {
         var overdue: [VTask] = []
         var normal: [VTask] = []
         var evening: [VTask] = []
-        for task in inToday {
-            if let due = deadlineDay(task, calendar: calendar), due < today {
-                overdue.append(task)
-            } else if task.hasThingsEveningLabel {
-                evening.append(task)
+        for fact in facts where isInToday(fact, today: today) {
+            if let due = fact.deadlineDay, due < today {
+                overdue.append(fact.task)
+            } else if fact.isEvening {
+                evening.append(fact.task)
             } else {
-                normal.append(task)
+                normal.append(fact.task)
             }
         }
         var result: [ThingsListSection] = []
@@ -190,12 +249,12 @@ enum ThingsListBuilder {
     /// A future start date wins. Without any start date, a future deadline is
     /// used (06 section 2: a deadline-only task is also visible at its deadline).
     /// A task whose start date is today or earlier is a Today task, not Upcoming.
-    private static func upcomingDay(_ task: VTask, today: Date, calendar: Calendar) -> Date? {
-        guard !task.done, !task.hasThingsSomedayLabel else { return nil }
-        if let start = startDay(task, calendar: calendar) {
+    private static func upcomingDay(_ fact: Facts, today: Date) -> Date? {
+        guard !fact.task.done, !fact.isSomeday else { return nil }
+        if let start = fact.startDay {
             return start > today ? start : nil
         }
-        if let due = deadlineDay(task, calendar: calendar), due > today {
+        if let due = fact.deadlineDay, due > today {
             return due
         }
         return nil
@@ -208,11 +267,11 @@ enum ThingsListBuilder {
     /// simplest rule is used: one `.monthGroup` per calendar month, with no week
     /// level. The current month's remaining days after the seventh one form the
     /// first month group.
-    private static func upcomingSections(tasks: [VTask], today: Date, calendar: Calendar) -> [ThingsListSection] {
+    private static func upcomingSections(facts: [Facts], today: Date, calendar: Calendar) -> [ThingsListSection] {
         var items: [(day: Date, task: VTask)] = []
-        for task in tasks {
-            if let day = upcomingDay(task, today: today, calendar: calendar) {
-                items.append((day: day, task: task))
+        for fact in facts {
+            if let day = upcomingDay(fact, today: today) {
+                items.append((day: day, task: fact.task))
             }
         }
         items.sort { lhs, rhs in
@@ -222,8 +281,15 @@ enum ThingsListBuilder {
 
         var result: [ThingsListSection] = []
         var currentKey: Date?
+        var offsets: [Date: Int] = [:]
         for item in items {
-            let offset = calendar.dateComponents([.day], from: today, to: item.day).day ?? Int.max
+            let offset: Int
+            if let known = offsets[item.day] {
+                offset = known
+            } else {
+                offset = calendar.dateComponents([.day], from: today, to: item.day).day ?? Int.max
+                offsets[item.day] = offset
+            }
             let kind: ThingsListSection.Kind
             let key: Date
             let sectionID: String
@@ -259,8 +325,8 @@ enum ThingsListBuilder {
     /// SPEC-UNSURE: a done task without a usable `doneAt` falls back to its
     /// last update; with neither it goes to a trailing `.normal` section.
     private static func completionDate(_ task: VTask, calendar: Calendar) -> Date? {
-        if let done = validDate(task.doneAt, calendar: calendar) { return done }
-        return validDate(task.updated, calendar: calendar)
+        if let done = validDate(task.doneAt) { return done }
+        return validDate(task.updated)
     }
 
     /// Done tasks (completed or cancelled), newest first, one block per day.

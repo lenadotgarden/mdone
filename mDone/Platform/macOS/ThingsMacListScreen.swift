@@ -75,6 +75,7 @@ struct ThingsMacListScreen: View {
             empty: AnyView(empty),
             trailing: nil
         )
+        .onAppear { model.home.parentForNewProject = nil }
         .task(id: list) {
             if list == .today {
                 events = await ThingsTodayEvents.load()
@@ -136,8 +137,9 @@ struct ThingsMacListScreen: View {
 }
 
 /// A project or an Area in the detail pane (spec 02 sections 9 and 10, mac-dark-03.png):
-/// its open to-dos, then the "Upcoming" and "Someday" groups with their icon and rule,
-/// then for an Area its projects, then "Hide later items" and "Show N logged items".
+/// its sub-projects at the top (nested, foldable, see `ThingsMacSubprojectList`), its open
+/// to-dos, then the "Upcoming" and "Someday" groups with their icon and rule, then
+/// "Hide later items" and "Show N logged items".
 /// Headings are a TODO (DEVIATIONS.md).
 struct ThingsMacProjectScreen: View {
     let projectID: Int64
@@ -151,9 +153,21 @@ struct ThingsMacProjectScreen: View {
         model.appState.projects.first { $0.id == projectID }
     }
 
+    /// The project in the tree: an Area is any root with sub-projects (or the marker),
+    /// whatever its description says.
+    private var node: ThingsProjectNode? {
+        model.projectTree.node(id: projectID)
+    }
+
     private var isArea: Bool {
+        if let node = node { return node.isArea }
         guard let project = project else { return false }
         return ThingsProjectMeta.isArea(project)
+    }
+
+    /// Whether the screen lists sub-projects at the top (any project with children).
+    private var hasSubprojects: Bool {
+        node?.hasChildren ?? false
     }
 
     /// Sections and counts of the screen, computed outside `body` (it uses loops).
@@ -222,6 +236,8 @@ struct ThingsMacProjectScreen: View {
             empty: nil,
             trailing: AnyView(footer(listModel, hasLater: data.hasLater, loggedCount: data.loggedCount))
         )
+        .onAppear { model.home.parentForNewProject = projectID }
+        .onChange(of: projectID) { _, newID in model.home.parentForNewProject = newID }
     }
 
     /// Finished to-dos of the project, newest first. Only those `AppState.tasks` holds.
@@ -239,8 +255,19 @@ struct ThingsMacProjectScreen: View {
 
     // MARK: - Header and footer
 
-    @ViewBuilder
+    /// Title row, then the sub-projects (Area or any project with children), like the Work
+    /// screen of Things: they come before the to-dos.
     private func header(_ listModel: ThingsListViewModel, hasLater: Bool, loggedCount: Int) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            titleRow(listModel, hasLater: hasLater, loggedCount: loggedCount)
+            if hasSubprojects {
+                ThingsMacSubprojectList(parentID: projectID, model: model, listModel: listModel)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func titleRow(_ listModel: ThingsListViewModel, hasLater: Bool, loggedCount: Int) -> some View {
         let title = project?.title ?? String(localized: "Project")
         let more = AnyView(
             ThingsMoreMenu {
@@ -254,6 +281,15 @@ struct ThingsMacProjectScreen: View {
                         withAnimation(ThingsMotion.rowRemoval) { showsLogged.toggle() }
                     }
                 }
+                if hasSubprojects {
+                    Button(String(localized: "Expand All")) {
+                        model.appState.setAllProjectsExpanded(true, tree: model.projectTree)
+                    }
+                    Button(String(localized: "Collapse All")) {
+                        model.appState.setAllProjectsExpanded(false, tree: model.projectTree)
+                    }
+                }
+                Button(String(localized: "Move Project...")) { model.projectMoveRequest = projectID }
             }
         )
         if isArea {
@@ -271,7 +307,6 @@ struct ThingsMacProjectScreen: View {
 
     private func footer(_ listModel: ThingsListViewModel, hasLater: Bool, loggedCount: Int) -> some View {
         VStack(alignment: .leading, spacing: 0) {
-            if isArea { children(listModel) }
             VStack(alignment: .leading, spacing: ThingsMetrics.FooterLink.stackGap) {
                 if hasLater {
                     ThingsFooterLink(
@@ -293,44 +328,6 @@ struct ThingsMacProjectScreen: View {
             .padding(.top, (hasLater || loggedCount > 0) ? ThingsMetrics.FooterLink.topPadding : 0)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-    }
-
-    /// The projects of an Area: pie, bold title and a small count badge (mac-dark-03.png).
-    private func children(_ listModel: ThingsListViewModel) -> some View {
-        let palette = ThingsPalette(scheme)
-        let kids = ThingsProjectMeta.children(of: projectID, in: model.appState.projects)
-        return VStack(alignment: .leading, spacing: 0) {
-            ForEach(kids) { child in
-                let openCount = model.appState.tasksForProject(child.id).count
-                Button {
-                    model.navigate(to: .project(child.id))
-                } label: {
-                    HStack(spacing: ThingsMetrics.Row.checkboxTitleSpacing) {
-                        ThingsProjectPie(progress: listModel.progress(ofProject: child.id), size: ThingsMetrics.Checkbox.size + 4)
-                        Text(verbatim: child.title)
-                            .font(ThingsTypography.todoTitle.weight(.semibold))
-                            .foregroundStyle(palette[.textPrimary])
-                            .lineLimit(1)
-                        if openCount > 0 {
-                            Text(verbatim: String(openCount))
-                                .font(ThingsTypography.datePill)
-                                .foregroundStyle(palette[.textSecondary])
-                                .padding(.horizontal, 4)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 3, style: .continuous)
-                                        .strokeBorder(palette[.tagPillBorder], lineWidth: ThingsMetrics.Chip.tagBorderWidth)
-                                )
-                        }
-                        Spacer(minLength: 0)
-                    }
-                    .padding(.horizontal, ThingsMetrics.Layout.listHorizontalMargin - 2)
-                    .frame(minHeight: ThingsMetrics.Row.minHeight)
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-            }
-        }
-        .padding(.top, ThingsMetrics.Spacing.s)
     }
 }
 

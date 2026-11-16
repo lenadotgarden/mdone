@@ -8,8 +8,10 @@ enum ThingsMotion {
     static let completionRemovalDelay: TimeInterval = 1.0
     /// Checkbox fill and checkmark.
     static let checkboxToggle: Animation = .spring(response: 0.3, dampingFraction: 0.8)
-    /// Title greying and strikethrough.
-    static let titleStrike: Animation = .easeOut(duration: 0.15)
+    /// The checkmark drawing itself inside the box, about a quarter of a second.
+    static let checkDraw: Animation = .easeOut(duration: 0.25)
+    /// Title greying and the strike line growing over it.
+    static let titleStrike: Animation = .easeOut(duration: 0.2)
     /// Row height collapse when it leaves the list.
     static let rowRemoval: Animation = .easeInOut(duration: 0.25)
     /// Row grows into the open card, and back.

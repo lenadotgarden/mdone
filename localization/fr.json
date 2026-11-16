@@ -486,6 +486,7 @@
     "Move to Area or project..." : "Déplacer vers une zone ou un projet...",
     "Move to..." : "Déplacer vers...",
     "Move to…" : "",
+    "Move Project..." : "Déplacer le projet...",
     "Move..." : "Déplacer...",
     "NSCalendarsFullAccessUsageDescription" : {
       "comment" : "Permission prompt shown before mDone reads the user's calendars.",

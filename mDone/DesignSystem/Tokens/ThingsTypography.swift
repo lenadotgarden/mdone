@@ -83,6 +83,21 @@ enum ThingsTypography {
         ios: Font.footnote,
         mac: Font.system(size: 11, weight: .regular))
 
+    /// Header field of the When and Deadline popovers. 13 pt semibold. [PROPOSAL]
+    static let popoverTitle: Font = Font.system(size: 13, weight: .semibold)
+
+    /// Row of the When popover (Today, This Evening...). 13 pt. [PROPOSAL]
+    static let popoverRow: Font = Font.system(size: 13, weight: .regular)
+
+    /// Month and year above the calendar grid. 12 pt semibold. [PROPOSAL]
+    static let calendarMonth: Font = Font.system(size: 12, weight: .semibold)
+
+    /// Weekday letters above the calendar grid. 10 pt medium. [PROPOSAL]
+    static let calendarWeekday: Font = Font.system(size: 10, weight: .medium)
+
+    /// Day number in the calendar grid. 12 pt. [PROPOSAL]
+    static let calendarDay: Font = Font.system(size: 12, weight: .regular).monospacedDigit()
+
     /// Empty state headline. [PROPOSAL]
     static let emptyTitle: Font = ThingsPlatform.value(
         ios: Font.title3.weight(.semibold),

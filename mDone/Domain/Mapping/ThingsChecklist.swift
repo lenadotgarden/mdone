@@ -32,10 +32,34 @@ enum ThingsChecklist {
         return progress(of: items)
     }
 
-    /// Whether `task` is a checklist item, i.e. has a parent task. Such tasks
-    /// are hidden from the lists.
+    /// Whether `task` is a checklist item: a plain step of a parent to-do. Such
+    /// tasks are hidden from the lists (07 section 5), because the parent
+    /// already shows them.
+    ///
+    /// Only a plain step counts. A Vikunja subtask is a full task, and users
+    /// who build real subtasks (in another project than the parent, with their
+    /// own dates or labels, or still open under a finished parent) would see
+    /// them vanish from every list if every task with a parent were hidden.
+    /// So a subtask stays visible as a to-do of its own when any of these holds:
+    /// - it lives in another project than its parent,
+    /// - it has a start date, a deadline or a label (Things forbids all three
+    ///   on a checklist item, so the user meant a real to-do),
+    /// - it is still open while its parent is done.
     static func isChecklistItem(_ task: VTask) -> Bool {
-        task.hasParentTask
+        let parents = task.parentTasks
+        if parents.isEmpty { return false }
+        if hasDate(task.startDate) || hasDate(task.dueDate) { return false }
+        if let labels = task.labels, !labels.isEmpty { return false }
+        return parents.contains { parent in
+            parent.projectId == task.projectId && (task.done || !parent.done)
+        }
+    }
+
+    /// A date that is set: not nil and not Vikunja's zero date (year 1).
+    private static func hasDate(_ date: Date?) -> Bool {
+        guard let date = date else { return false }
+        // Anything before about the year 4 is the zero date or garbage.
+        return date.timeIntervalSinceReferenceDate > -63_000_000_000
     }
 
     /// `tasks` without the checklist items.

@@ -7,6 +7,15 @@ enum ThingsMacPopover: Equatable {
     case when, deadline, tags, move
 }
 
+/// A popover shown on the selected row itself (Cmd S, Shift Cmd D), without opening the
+/// to-do card. Identifiable so a row can hang it on `popover(item:)`.
+struct ThingsMacRowPopover: Identifiable, Equatable {
+    let kind: ThingsMacPopover
+    let taskID: Int64
+
+    var id: String { "\(taskID).\(kind)" }
+}
+
 /// A field of the open to-do card a command can put the cursor in.
 enum ThingsMacEditorField: Equatable {
     case checklist
@@ -44,11 +53,21 @@ final class ThingsMacModel {
 
     var selectedTaskID: Int64?
     /// The to-do shown as an open card, if any.
-    private(set) var expandedTaskID: Int64?
+    var expandedTaskID: Int64?
     /// To-do ids in display order, published by the list on screen for the arrow keys.
     var visibleTaskIDs: [Int64] = []
-    /// Shows the empty row at the top of the list.
+    /// Shows the empty row for a new to-do: at the top of the list, or right below the to-do
+    /// `insertAfterTaskID` when that is set (Space).
     var isAddingTodo = false
+    var insertAfterTaskID: Int64?
+    /// When or Deadline popover hanging on a row.
+    var rowPopover: ThingsMacRowPopover?
+
+    /// Undo and redo history of this window (`ThingsMacModel+Undo`).
+    var undoStack = ThingsUndoStack()
+    /// Old task id to the id of the task that replaced it after an Undo Delete.
+    @ObservationIgnored var idAliases: [Int64: Int64] = [:]
+    var isUndoRunning = false
 
     /// Popover or field requested by a command, consumed by the open card.
     var pendingPopover: ThingsMacPopover?
@@ -149,6 +168,8 @@ final class ThingsMacModel {
         selectedTaskID = nil
         expandedTaskID = nil
         isAddingTodo = false
+        insertAfterTaskID = nil
+        rowPopover = nil
     }
 
     /// Selects a to-do. Selecting another one closes the open card.
@@ -189,11 +210,28 @@ final class ThingsMacModel {
         listFocusToken += 1
     }
 
-    /// Opens the selected to-do and asks its card for a popover.
+    /// Shows a popover for the selected to-do. When and Deadline (Cmd S, Shift Cmd D) hang on
+    /// the row itself, or on the open card when the card is already open; Tags and Move
+    /// open the card first, their buttons live there.
     func requestPopover(_ popover: ThingsMacPopover) {
         guard let id = selectedTaskID else { return }
-        expandedTaskID = id
-        pendingPopover = popover
+        switch popover {
+        case .when, .deadline:
+            if expandedTaskID == id {
+                pendingPopover = popover
+            } else {
+                rowPopover = ThingsMacRowPopover(kind: popover, taskID: id)
+            }
+        case .tags, .move:
+            expandedTaskID = id
+            pendingPopover = popover
+        }
+    }
+
+    /// Closes the popover of a row and gives the keyboard back to the list.
+    func closeRowPopover() {
+        rowPopover = nil
+        listFocusToken += 1
     }
 
     /// Move (Shift Cmd M): the selected to-do when there is one, else the

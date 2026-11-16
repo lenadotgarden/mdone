@@ -46,32 +46,53 @@ final class ThingsListViewModel {
         appState.defaultProject?.id
     }
 
-    /// Tasks that can be listed: checklist items (subtasks) are hidden.
-    private var listableTasks: [VTask] {
-        ThingsChecklist.topLevel(appState.tasks)
-    }
-
-    /// The raw sections of the list.
-    var sections: [ThingsListSection] {
-        ThingsListBuilder.sections(
-            for: list,
-            tasks: listableTasks,
+    /// Everything derived from the tasks, memoized in `AppState` and shared by
+    /// every list view model. It is rebuilt only when the tasks, the Inbox
+    /// project or the day change, not on each body evaluation. Reading
+    /// `appState.tasks` here is what registers the observation, so a change of
+    /// the tasks still redraws the views that read this model.
+    private var derived: ThingsListsCache.Entry {
+        let tasks = appState.tasks
+        return appState.thingsCache.entry(
+            tasks: tasks,
+            tasksRevision: appState.tasksRevision,
             inboxProjectID: inboxProjectID,
             now: clock(),
             calendar: calendar
         )
     }
 
-    /// The sections with their rows mapped to display models.
+    /// The raw sections of the list.
+    var sections: [ThingsListSection] {
+        derived.snapshot.sections[list] ?? []
+    }
+
+    /// The sections with their rows mapped to display models. Memoized on the
+    /// derived data and the ticked boxes, the only other input.
     var displaySections: [ThingsDisplaySection] {
-        ThingsRowMapper.displaySections(
-            sections,
+        let entry = derived
+        let pending = pendingDoneIDs
+        if let memo = displayMemo, memo.generation == entry.generation, memo.pending == pending {
+            return memo.sections
+        }
+        let built = ThingsRowMapper.displaySections(
+            entry.snapshot.sections[list] ?? [],
             list: list,
-            pendingDone: pendingDoneIDs,
+            pendingDone: pending,
             now: clock(),
             calendar: calendar
         )
+        displayMemo = DisplayMemo(generation: entry.generation, pending: pending, sections: built)
+        return built
     }
+
+    private struct DisplayMemo {
+        let generation: UInt64
+        let pending: Set<Int64>
+        let sections: [ThingsDisplaySection]
+    }
+
+    @ObservationIgnored private var displayMemo: DisplayMemo?
 
     /// Row ids in display order, handy to animate list changes.
     var rowIDs: [String] {
@@ -80,23 +101,12 @@ final class ThingsListViewModel {
 
     /// Task counts of every list, for the Home badges.
     var counts: [ThingsList: Int] {
-        ThingsListBuilder.counts(
-            tasks: listableTasks,
-            inboxProjectID: inboxProjectID,
-            now: clock(),
-            calendar: calendar
-        )
+        derived.snapshot.counts
     }
 
     /// The task count of one list.
     func count(for other: ThingsList) -> Int {
-        ThingsListBuilder.count(
-            for: other,
-            tasks: listableTasks,
-            inboxProjectID: inboxProjectID,
-            now: clock(),
-            calendar: calendar
-        )
+        derived.snapshot.counts[other] ?? 0
     }
 
     /// The header of a section.
@@ -123,12 +133,10 @@ final class ThingsListViewModel {
     }
 
     /// Share of finished to-dos in a project, 0 to 1 (spec 06 section 15 leaves
-    /// the exact rule open; this is done over all top level to-dos).
+    /// the exact rule open; this is done over all top level to-dos). One
+    /// dictionary lookup: the shares of every project are computed together.
     func progress(ofProject projectID: Int64) -> Double {
-        let inProject = listableTasks.filter { $0.projectId == projectID }
-        if inProject.isEmpty { return 0 }
-        let finished = inProject.filter { $0.done }.count
-        return Double(finished) / Double(inProject.count)
+        derived.progressByProject[projectID] ?? 0
     }
 
     // MARK: - Actions
@@ -220,8 +228,8 @@ final class ThingsListViewModel {
 
     private var quickAddProjectID: Int64? {
         if list == .anytime {
-            let loose = ThingsProjectMeta.looseProjects(in: appState.projects, inboxProjectID: inboxProjectID)
-            return loose.first?.id ?? inboxProjectID
+            let tree = ThingsProjectTree.build(projects: appState.projects, inboxProjectID: inboxProjectID)
+            return tree.looseProjects.first?.project.id ?? inboxProjectID
         }
         return inboxProjectID
     }

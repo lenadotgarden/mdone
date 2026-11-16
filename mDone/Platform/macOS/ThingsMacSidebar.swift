@@ -17,6 +17,8 @@ private enum ThingsSidebarStyle {
     /// Extra indent per tree level below the first project level.
     static let levelIndent: CGFloat = ThingsMetrics.Spacing.l
     static let chevronWidth: CGFloat = 10
+    /// Chevron opacity when the pointer is elsewhere: visible, so the tree is discoverable.
+    static let chevronRestingOpacity: Double = 0.55
 
     /// The built-in lists in their three visual groups.
     static let listGroups: [[ThingsList]] = [
@@ -35,6 +37,8 @@ struct ThingsMacSidebar: View {
 
     @State private var hovered: String?
     @State private var dropTarget: String?
+    @State private var projectDrop: ThingsProjectDropState?
+    @State private var rowHeights = ThingsRowHeightStore()
     @Environment(\.colorScheme) private var scheme
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -42,7 +46,9 @@ struct ThingsMacSidebar: View {
 
     var body: some View {
         let tree = model.projectTree
-        let collapsed = model.collapsedProjectIDs
+        // Fold state is persisted by AppState (absent = expanded), so every level is open
+        // by default and the choice survives a relaunch.
+        let collapsed = model.appState.collapsedProjectIDs
         return ScrollView {
             VStack(alignment: .leading, spacing: 0) {
                 ForEach(0..<ThingsSidebarStyle.listGroups.count, id: \.self) { index in
@@ -73,6 +79,7 @@ struct ThingsMacSidebar: View {
         .focusEffectDisabled()
         .onKeyPress(.upArrow) { moveRoute(by: -1, tree: tree, collapsed: collapsed) }
         .onKeyPress(.downArrow) { moveRoute(by: 1, tree: tree, collapsed: collapsed) }
+        .onChange(of: model.route) { _, newRoute in revealRoute(newRoute, tree: tree) }
         .safeAreaInset(edge: .bottom, spacing: 0) { bottomBar }
     }
 
@@ -88,7 +95,8 @@ struct ThingsMacSidebar: View {
             route: .list(list), key: "list-" + list.rawValue, indent: 0, foldID: nil,
             movableProject: nil,
             target: .list(list),
-            dragPayload: nil
+            dragPayload: nil,
+            allowsAfterDrop: false
         ) {
             Image(systemName: ThingsIcons.symbol(for: kind))
                 .foregroundStyle(palette[ThingsIcons.tint(for: kind)])
@@ -117,7 +125,8 @@ struct ThingsMacSidebar: View {
             foldID: node.hasChildren ? node.id : nil,
             movableProject: node.project,
             target: .project(node.id),
-            dragPayload: .project(node.id)
+            dragPayload: .project(node.id),
+            allowsAfterDrop: !(node.hasChildren && !collapsed.contains(node.id))
         ) {
             if node.isArea {
                 Image(systemName: ThingsIcons.area)
@@ -136,10 +145,10 @@ struct ThingsMacSidebar: View {
             Spacer(minLength: 0)
         }
         .contextMenu {
-            Button(String(localized: "Move...")) { model.projectMoveRequest = node.id }
+            Button(String(localized: "Move Project...")) { model.projectMoveRequest = node.id }
             if node.hasChildren {
                 Button(collapsed.contains(node.id) ? String(localized: "Expand") : String(localized: "Collapse")) {
-                    model.toggleCollapsed(node.id)
+                    model.appState.toggleProjectFold(node.id)
                 }
             }
         }
@@ -155,12 +164,14 @@ struct ThingsMacSidebar: View {
         movableProject: Project?,
         target: ThingsDropTarget,
         dragPayload: ThingsDragPayload?,
+        allowsAfterDrop: Bool,
         @ViewBuilder content: () -> Content
     ) -> some View {
         let isSelected = model.route == route
         let isDropTarget = dropTarget == key
         let selectedFill: Color = palette[.textPrimary].opacity(ThingsSidebarStyle.selectionOpacity)
-        let fill: Color = isDropTarget ? palette[.selectionRow] : (isSelected ? selectedFill : Color.clear)
+        let isIntoProject = projectDrop?.key == key && projectDrop?.zone == .into
+        let fill: Color = (isDropTarget || isIntoProject) ? palette[.selectionRow] : (isSelected ? selectedFill : Color.clear)
         return HStack(spacing: ThingsMetrics.Row.checkboxTitleSpacing) {
             content()
         }
@@ -171,7 +182,7 @@ struct ThingsMacSidebar: View {
         .background(RoundedRectangle(cornerRadius: ThingsSidebarStyle.highlightRadius).fill(fill))
         .overlay(alignment: .leading) {
             if let foldID = foldID {
-                chevron(foldID: foldID, visible: hovered == key || model.collapsedProjectIDs.contains(foldID))
+                chevron(foldID: foldID, emphasized: hovered == key)
                     .padding(.leading, indent)
             }
         }
@@ -185,19 +196,45 @@ struct ThingsMacSidebar: View {
             }
         }
         .animation(ThingsMotion.resolved(ThingsMotion.dropTargetHighlight, reduceMotion: reduceMotion), value: isDropTarget)
+        .modifier(ThingsRowHeightReader(store: rowHeights, key: key))
+        .modifier(ThingsProjectDropFeedback(state: projectDrop, key: key, palette: palette, reduceMotion: reduceMotion))
         .modifier(ThingsSidebarDragSource(payload: dragPayload))
-        .onDrop(of: ThingsDragItem.contentTypes, delegate: ThingsSidebarDropDelegate(
-            targeted: $dropTarget,
-            key: key,
-            accepts: { acceptsDrop(on: target) },
-            perform: { payload in model.handleDrop(payload, on: target) }
-        ))
+        .modifier(rowDrop(key: key, target: target, allowsAfter: allowsAfterDrop))
         .popover(isPresented: moveBinding(for: movableProject), arrowEdge: .trailing) {
             if let project = movableProject {
                 ThingsMacProjectMovePopover(project: project, model: model, onClose: { model.projectMoveRequest = nil })
             }
         }
         .accessibilityAddTraits(.isButton)
+    }
+
+    /// Lists keep the plain drop rule. A project or Area row also takes a project dropped on
+    /// its top or bottom edge (sibling order) or its middle (becomes its child).
+    private func rowDrop(key: String, target: ThingsDropTarget, allowsAfter: Bool) -> RowDrop {
+        switch target {
+        case .list:
+            return RowDrop(
+                projectDelegate: nil,
+                listDelegate: ThingsSidebarDropDelegate(
+                    targeted: $dropTarget,
+                    key: key,
+                    accepts: { acceptsDrop(on: target) },
+                    perform: { payload in model.handleDrop(payload, on: target) }
+                )
+            )
+        case .project(let targetID):
+            return RowDrop(
+                projectDelegate: ThingsProjectRowDropDelegate(
+                    key: key,
+                    state: $projectDrop,
+                    rowHeight: { rowHeights.heights[key] ?? 0 },
+                    allowsAfter: allowsAfter,
+                    resolve: { payload, zone in model.projectDropZone(for: payload, on: targetID, asked: zone) },
+                    perform: { payload, zone in model.handleProjectRowDrop(payload, on: targetID, zone: zone) }
+                ),
+                listDelegate: nil
+            )
+        }
     }
 
     /// Whether the payload being dragged may be dropped on `target`: the highlight shows
@@ -207,13 +244,14 @@ struct ThingsMacSidebar: View {
         return model.dropAction(for: payload, on: target) != nil
     }
 
-    private func chevron(foldID: Int64, visible: Bool) -> some View {
-        let isCollapsed = model.collapsedProjectIDs.contains(foldID)
+    /// Disclosure chevron of a row with children. Always visible, a little stronger on hover.
+    private func chevron(foldID: Int64, emphasized: Bool) -> some View {
+        let isCollapsed = model.appState.collapsedProjectIDs.contains(foldID)
         return Button {
             if NSEvent.modifierFlags.contains(.command) {
-                model.setAllCollapsed(!isCollapsed)
+                model.appState.setAllProjectsExpanded(isCollapsed, tree: model.projectTree)
             } else {
-                model.toggleCollapsed(foldID)
+                model.appState.toggleProjectFold(foldID)
             }
         } label: {
             Image(systemName: isCollapsed ? "chevron.right" : "chevron.down")
@@ -223,7 +261,7 @@ struct ThingsMacSidebar: View {
         }
         .buttonStyle(.plain)
         .foregroundStyle(palette[.textSecondary])
-        .opacity(visible ? 1 : 0)
+        .opacity(emphasized ? 1 : ThingsSidebarStyle.chevronRestingOpacity)
     }
 
     private func moveBinding(for project: Project?) -> Binding<Bool> {
@@ -253,6 +291,15 @@ struct ThingsMacSidebar: View {
         return .handled
     }
 
+    /// Unfolds the ancestors of a project that was just opened (from the Area screen, Quick
+    /// Find or a drop), so its row is not hidden under a folded parent.
+    private func revealRoute(_ route: ThingsRoute, tree: ThingsProjectTree) {
+        guard case .project(let id) = route else { return }
+        for ancestor in tree.ancestorIDs(of: id) where !model.appState.isProjectExpanded(ancestor) {
+            model.appState.setProjectExpanded(true, for: ancestor)
+        }
+    }
+
     // MARK: - Bottom bar
 
     /// New List on the left, a folding menu (stand-in for the tag filter) on the right.
@@ -270,8 +317,12 @@ struct ThingsMacSidebar: View {
             .fixedSize()
             Spacer(minLength: 0)
             Menu {
-                Button(String(localized: "Expand All")) { model.setAllCollapsed(false) }
-                Button(String(localized: "Collapse All")) { model.setAllCollapsed(true) }
+                Button(String(localized: "Expand All")) {
+                    model.appState.setAllProjectsExpanded(true, tree: model.projectTree)
+                }
+                Button(String(localized: "Collapse All")) {
+                    model.appState.setAllProjectsExpanded(false, tree: model.projectTree)
+                }
             } label: {
                 Image(systemName: "slider.horizontal.3")
             }
@@ -283,6 +334,23 @@ struct ThingsMacSidebar: View {
         .padding(.horizontal, ThingsMetrics.Spacing.m)
         .padding(.vertical, ThingsMetrics.Spacing.s)
         .background(palette[.bgSidebar])
+    }
+}
+
+/// The drop modifier of a row: a project row or a list row, whichever delegate applies.
+private struct RowDrop: ViewModifier {
+    let projectDelegate: ThingsProjectRowDropDelegate?
+    let listDelegate: ThingsSidebarDropDelegate?
+
+    @ViewBuilder
+    func body(content: Content) -> some View {
+        if let projectDelegate = projectDelegate {
+            content.onDrop(of: ThingsDragItem.contentTypes, delegate: projectDelegate)
+        } else if let listDelegate = listDelegate {
+            content.onDrop(of: ThingsDragItem.contentTypes, delegate: listDelegate)
+        } else {
+            content
+        }
     }
 }
 

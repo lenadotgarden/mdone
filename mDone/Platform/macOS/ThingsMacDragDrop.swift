@@ -109,7 +109,8 @@ struct ThingsListDropDelegate: DropDelegate {
     let slot: Binding<ThingsDropSlot?>
     /// Animation of the gap opening and closing, nil with Reduce Motion.
     let animation: Animation?
-    /// Commits a drop at the slot. Returns false when it changes nothing.
+    /// Commits a drop at the slot and clears the slot itself. Returns false when it
+    /// changes nothing.
     let commit: (ThingsDropSlot) -> Bool
 
     func validateDrop(info: DropInfo) -> Bool {
@@ -132,9 +133,16 @@ struct ThingsListDropDelegate: DropDelegate {
 
     func performDrop(info: DropInfo) -> Bool {
         let target = slotAt(info.location.y) ?? slot.wrappedValue
-        update(nil)
-        guard let target = target else { return false }
+        guard let target = target else {
+            update(nil)
+            ThingsDragSession.shared.end()
+            return false
+        }
+        // The slot is not cleared first: `commit` applies the new order and clears the slot
+        // in one transaction, so the rows do not slide back and then forward again. Only
+        // a drop that changes nothing closes the gap here.
         let done = commit(target)
+        if !done { update(nil) }
         ThingsDragSession.shared.end()
         return done
     }

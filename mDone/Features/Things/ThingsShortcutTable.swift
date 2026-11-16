@@ -7,9 +7,10 @@ enum ThingsCommandID: String, CaseIterable, Hashable {
     // Go to
     case goInbox, goToday, goUpcoming, goAnytime, goSomeday, goLogbook
     // Create
-    case newTodo, newProject, newHeading, newChecklist, quickEntry
+    case newTodo, newTodoBelow, newProject, newHeading, newChecklist, quickEntry
     // Edit
     case openItem, saveAndClose, duplicate, complete, cancel, deleteItem, moveCompletedToLogbook
+    case undo, redo
     // Select
     case selectFirst, selectLast, extendSelectionUp, extendSelectionDown, selectAll
     // Move
@@ -102,6 +103,7 @@ enum ThingsShortcutTable {
 
     private static let creation: [ThingsShortcutEntry] = [
         done(.newTodo, ThingsKeyChord("n", command: true)),
+        done(.newTodoBelow, ThingsKeyChord("space")),
         done(.newProject, ThingsKeyChord("n", option: true, command: true)),
         todo(.newHeading, ThingsKeyChord("n", shift: true, command: true), "Headings need the things-headings view, see DEVIATIONS"),
         done(.newChecklist, ThingsKeyChord("c", shift: true, command: true)),
@@ -115,6 +117,8 @@ enum ThingsShortcutTable {
         done(.complete, ThingsKeyChord("k", command: true)),
         done(.cancel, ThingsKeyChord("k", option: true, command: true)),
         done(.deleteItem, ThingsKeyChord("delete")),
+        done(.undo, ThingsKeyChord("z", command: true)),
+        done(.redo, ThingsKeyChord("z", shift: true, command: true)),
         todo(.moveCompletedToLogbook, ThingsKeyChord("y", shift: true, command: true), "Completed to-dos enter the Logbook at once")
     ]
 
@@ -128,10 +132,11 @@ enum ThingsShortcutTable {
 
     private static let moving: [ThingsShortcutEntry] = [
         done(.moveItem, ThingsKeyChord("m", shift: true, command: true)),
-        todo(.moveItemUp, ThingsKeyChord("up", command: true), "Reordering needs the list view positions"),
-        todo(.moveItemDown, ThingsKeyChord("down", command: true), "Reordering needs the list view positions"),
-        todo(.moveItemToTop, ThingsKeyChord("up", option: true, command: true), "Reordering needs the list view positions"),
-        todo(.moveItemToBottom, ThingsKeyChord("down", option: true, command: true), "Reordering needs the list view positions")
+        // Handled by the key handler of the list, not by the menu (08-drag-and-drop.md section 5).
+        done(.moveItemUp, ThingsKeyChord("up", command: true)),
+        done(.moveItemDown, ThingsKeyChord("down", command: true)),
+        done(.moveItemToTop, ThingsKeyChord("up", option: true, command: true)),
+        done(.moveItemToBottom, ThingsKeyChord("down", option: true, command: true))
     ]
 
     private static let dates: [ThingsShortcutEntry] = [

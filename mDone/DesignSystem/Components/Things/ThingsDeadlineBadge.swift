@@ -21,16 +21,20 @@ struct ThingsDeadlineBadge: View {
         return Text("\(ago) days ago")
     }
 
+    /// The flag and the text always share one colour: the secondary grey while the
+    /// deadline is ahead, red when it is today or past (spec 06 section 6).
+    private var tint: ThingsColorToken { isUrgent ? .deadlineFlame : .textSecondary }
+
     var body: some View {
         let palette = ThingsPalette(scheme)
         HStack(spacing: ThingsMetrics.Spacing.xs) {
             Image(systemName: ThingsIcons.deadlineFlag)
                 .font(.system(size: ThingsMetrics.Row.indicatorIconSize))
-                .foregroundStyle(palette[.deadlineFlame])
+                .foregroundStyle(palette[tint])
             label
                 .font(ThingsTypography.deadline)
                 .fontWeight(daysRemaining < 0 ? .semibold : .regular)
-                .foregroundStyle(isUrgent ? palette[.deadlineFlame] : palette[.textSecondary])
+                .foregroundStyle(palette[tint])
                 .lineLimit(1)
         }
         .accessibilityElement(children: .combine)

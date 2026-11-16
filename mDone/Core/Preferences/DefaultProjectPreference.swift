@@ -29,9 +29,19 @@ enum DefaultProjectPreference {
         projects.filter { $0.id > 0 }
     }
 
+    /// Prefers a top level project with no sub-projects, so a guessed Inbox
+    /// is never an Area that owns a subtree.
+    private static func firstLeafRoot(in candidates: [Project]) -> Project? {
+        let parentIDs = Set(candidates.compactMap { $0.parentProjectId }.filter { $0 > 0 })
+        return candidates.first(where: {
+            ($0.parentProjectId ?? 0) == 0 && !parentIDs.contains($0.id)
+        })
+    }
+
     /// The project to add a task to. The user's pick wins while it is still
     /// among `projects`; a deleted or archived pick falls back to automatic,
-    /// which prefers a project titled "Inbox" and then the first project.
+    /// which prefers a project titled "Inbox", then a top level project
+    /// without sub-projects, then the first project.
     static func resolve(in projects: [Project], defaults: UserDefaults = .standard) -> Project? {
         let candidates = selectable(from: projects)
         if let id = storedProjectId(defaults: defaults),
@@ -42,6 +52,6 @@ enum DefaultProjectPreference {
         return candidates.first(where: {
             $0.title.trimmingCharacters(in: .whitespacesAndNewlines)
                 .caseInsensitiveCompare(inboxTitle) == .orderedSame
-        }) ?? candidates.first
+        }) ?? firstLeafRoot(in: candidates) ?? candidates.first
     }
 }

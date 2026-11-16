@@ -24,6 +24,8 @@ import AppKit
 private struct ThingsTypeTravel: ViewModifier {
     let model: ThingsMacModel
 
+    @Environment(\.scenePhase) private var scenePhase
+
     func body(content: Content) -> some View {
         content
             .onKeyPress(phases: [.down]) { press in
@@ -31,6 +33,47 @@ private struct ThingsTypeTravel: ViewModifier {
             }
             .onAppear { focusListIfNothingIsFocused() }
             .onChange(of: model.route) { _, _ in focusListIfNothingIsFocused() }
+            // Focus recovery. After the user switches to another app and back,
+            // AppKit hands the window back but the SwiftUI focus of the list
+            // is gone, so the arrow keys did nothing until a click. The list
+            // owns one focus (`ThingsMacModel.listFocusToken`); these triggers
+            // ask it to take the focus again whenever it can have been lost.
+            .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+                reclaimListFocus()
+            }
+            .onReceive(NotificationCenter.default.publisher(for: NSWindow.didBecomeKeyNotification)) { note in
+                // Windows that can become main are the app windows; popovers,
+                // panels and the Quick Entry panel can not, and must keep the
+                // focus they were given.
+                if let window = note.object as? NSWindow, window.canBecomeMain {
+                    reclaimListFocus()
+                }
+            }
+            .onChange(of: scenePhase) { _, phase in
+                if phase == .active { reclaimListFocus() }
+            }
+            // A selection means the user is about to use the keys: the list
+            // must be the one receiving them.
+            .onChange(of: model.selectedTaskID) { _, selected in
+                if selected != nil { reclaimListFocus(afterDelay: false) }
+            }
+    }
+
+    /// Gives the keyboard back to the list unless something else legitimately
+    /// holds it: a text field (the open card, the new to-do row, Quick Find),
+    /// a sheet, an alert or the Quick Find card.
+    ///
+    /// The short delay lets AppKit finish restoring its own first responder, so
+    /// the list does not fight it. Repeated triggers coalesce into one bump.
+    private func reclaimListFocus(afterDelay: Bool = true) {
+        Task { @MainActor in
+            if afterDelay { try? await Task.sleep(nanoseconds: 150_000_000) }
+            guard NSApp.isActive else { return }
+            if model.isAddingTodo || model.expandedTaskID != nil || model.showQuickFind { return }
+            if model.sheet != nil || model.pendingDeletion != nil { return }
+            if Self.isEditingText() { return }
+            model.listFocusToken += 1
+        }
     }
 
     @MainActor

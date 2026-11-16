@@ -94,19 +94,27 @@ struct ThingsHomeScreen: View {
             spacer
             listRow(.logbook)
             spacer
-            ForEach(viewModel.looseProjects) { entry in
-                projectRow(entry, indent: false)
-            }
-            ForEach(viewModel.areas) { area in
-                projectRow(area, indent: false)
-                ForEach(area.children) { child in
-                    projectRow(child, indent: true)
-                }
-            }
+            projectRows
         }
         .listStyle(.plain)
         .scrollContentBackground(.hidden)
         .refreshable { await viewModel.refresh() }
+    }
+
+    /// The whole project tree, like the Mac sidebar: loose projects, then every Area with
+    /// all its descendants (any depth), foldable. Fold state is `AppState.collapsedProjectIDs`.
+    @ViewBuilder
+    private var projectRows: some View {
+        let tree = viewModel.tree
+        let collapsed = viewModel.collapsedIDs
+        ForEach(tree.looseProjects) { node in
+            projectRow(node)
+        }
+        ForEach(tree.areas) { area in
+            ForEach(tree.visibleSubtree(of: area, collapsed: collapsed)) { node in
+                projectRow(node)
+            }
+        }
     }
 
     private var spacer: some View {
@@ -137,31 +145,43 @@ struct ThingsHomeScreen: View {
         }
     }
 
-    private func projectRow(_ entry: ThingsHomeProject, indent: Bool) -> some View {
-        homeRow(route: .project(entry.project.id), indent: indent) {
-            if entry.kind == .area {
+    private func projectRow(_ node: ThingsProjectNode) -> some View {
+        let folded = viewModel.isFolded(node.id)
+        return homeRow(
+            route: .project(node.id),
+            indent: CGFloat(node.depth) * ThingsMetrics.Spacing.l,
+            fold: node.hasChildren ? FoldControl(id: node.id, isFolded: folded) : nil
+        ) {
+            if node.isArea {
                 Image(systemName: ThingsIcons.area)
                     .font(.system(size: ThingsMetrics.Icon.list * 0.8))
                     .foregroundStyle(palette[.areaGray])
                     .frame(width: ThingsMetrics.Icon.list)
                     .accessibilityHidden(true)
             } else {
-                ThingsProjectPie(progress: entry.progress)
+                ThingsProjectPie(progress: viewModel.progress(of: node))
                     .frame(width: ThingsMetrics.Icon.list)
             }
-            Text(verbatim: entry.project.title)
+            Text(verbatim: node.title)
                 .font(ThingsTypography.sidebarRow)
-                .fontWeight(entry.kind == .area ? .semibold : .regular)
-                .foregroundStyle(entry.kind == .area ? palette[.textSecondary] : palette[.textPrimary])
+                .fontWeight(node.isArea ? .semibold : .regular)
+                .foregroundStyle(node.isArea ? palette[.textSecondary] : palette[.textPrimary])
                 .lineLimit(1)
             Spacer(minLength: 0)
         }
     }
 
+    /// What the fold button of a row needs.
+    private struct FoldControl {
+        let id: Int64
+        let isFolded: Bool
+    }
+
     /// A tappable Home line. The invisible link keeps the disclosure chevron away.
     private func homeRow<Content: View>(
         route: ThingsRoute,
-        indent: Bool = false,
+        indent: CGFloat = 0,
+        fold: FoldControl? = nil,
         @ViewBuilder content: () -> Content
     ) -> some View {
         ZStack {
@@ -169,8 +189,21 @@ struct ThingsHomeScreen: View {
                 .opacity(0)
             HStack(spacing: ThingsMetrics.Row.checkboxTitleSpacing) {
                 content()
+                if let fold = fold {
+                    Button {
+                        withAnimation(ThingsMotion.rowRemoval) { viewModel.toggleFold(fold.id) }
+                    } label: {
+                        Image(systemName: fold.isFolded ? "chevron.right" : "chevron.down")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundStyle(palette[.textSecondary])
+                            .frame(width: ThingsMetrics.Icon.list, height: ThingsMetrics.Icon.homeRowHeight)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(fold.isFolded ? String(localized: "Expand") : String(localized: "Collapse"))
+                }
             }
-            .padding(.leading, indent ? ThingsMetrics.Spacing.xl : 0)
+            .padding(.leading, indent)
             .padding(.horizontal, ThingsMetrics.Layout.listHorizontalMargin)
             .frame(minHeight: ThingsMetrics.Icon.homeRowHeight)
         }

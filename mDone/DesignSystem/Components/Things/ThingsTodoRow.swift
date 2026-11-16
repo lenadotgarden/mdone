@@ -89,11 +89,21 @@ struct ThingsTodoRow: View {
                     .foregroundStyle(palette[.accent])
                     .accessibilityLabel(Text("Repeating"))
             }
+            // The strike line is an overlay rather than `strikethrough` so it can grow
+            // over the title and fade in, which a text attribute cannot do.
             Text(verbatim: model.title)
                 .font(ThingsTypography.todoTitle)
                 .foregroundStyle(model.isFinished ? palette[.textSecondary] : palette[.textPrimary])
-                .strikethrough(model.isFinished)
                 .lineLimit(1)
+                .overlay(alignment: .leading) {
+                    Rectangle()
+                        .fill(palette[.textSecondary])
+                        .frame(height: ThingsMetrics.Strike.thickness)
+                        .scaleEffect(x: model.isFinished ? 1 : 0, y: 1, anchor: .leading)
+                        .opacity(model.isFinished ? 1 : 0)
+                        .allowsHitTesting(false)
+                        .accessibilityHidden(true)
+                }
             if model.hasNotes {
                 Image(systemName: ThingsIcons.notesDocument)
                     .font(.system(size: ThingsMetrics.Row.indicatorIconSize))

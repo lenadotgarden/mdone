@@ -41,6 +41,10 @@ Tokens : `ThingsMotion.reorder` (ressort de l'écart qui s'ouvre et se ferme, du
 4. `performDrop` construit un `ThingsDropPlan` et le valide, applique l'ordre optimiste (`orderOverride`, avec animation), puis `ThingsListViewModel.commitDrop` envoie `AppState.moveTask(_:toPosition:)`. La position vient de `TaskPositioning` (mêmes règles que le web Vikunja). Quand le serveur répond, l'ordre optimiste est retiré. Si l'envoi a échoué, les lignes reviennent à leur place (rollback).
 5. Un drop qui ne change rien renvoie `false` : le système ramène l'image à la ligne.
 
+### Drop without a second animation
+
+`performDrop` does not clear the slot before committing. `ThingsMacTodoList.apply(_:animation:landing:)` sets the optimistic order, clears the slot and flags `isLanding` in one transaction with animation disabled. The source row (`opacity` has `.animation(nil, value: isSource)`) and the sliding rows (`.animation(nil)` while `isLanding`) change at once, so the dragged row appears exactly where the gap was and no row moves a second time. When the save succeeds the optimistic order is removed without animation (it equals the server order); a failed save slides back with `ThingsMotion.reorder`. A drop that changes nothing closes the gap with the normal animation. Each saved move records an undo step (`ThingsMacModel.recordReorder`).
+
 ## 3. Entre sections d'un même écran
 
 Règles (`ThingsDropRules.when(from:to:)`), tout le reste est refusé :
@@ -86,3 +90,21 @@ Une cible ne peut pas lire le presse-papier pendant le survol, mais doit savoir 
 - Les lignes hors écran n'ont pas de frame (liste paresseuse) : le slot se calcule sur les lignes visibles, ce qui suffit car le pointeur est toujours sur une ligne visible.
 - Un drag annulé hors de la fenêtre laisse le payload dans `ThingsDragSession` jusqu'au prochain clic ; seul le retour visuel d'une cible peut en dépendre.
 - Les libellés `Move to This Evening`, `Move to Today`, `Move to Someday`, `Move to Anytime`, `Move` sont à ajouter à `Localizable.xcstrings` (fichier d'un autre lot).
+
+## 8. Projects: nesting and sibling order (Mac)
+
+Added with the project hierarchy work. A project row is a drag source (`ThingsDragPayload.project`) in two places: the sidebar and the sub-project list at the top of an Area or project screen (`ThingsMacSubprojectList`). Both use the same drop delegate, `ThingsProjectRowDropDelegate`, and the same pure decision, `ThingsProjectDropResolver`.
+
+| Pointer on the row | Zone | Effect | Feedback |
+|-|-|-|-|
+| middle | `.into` | the project becomes a child of the row (`AppState.moveProject`) | row highlight |
+| top edge | `.before` | the project lands before the row, under the row's parent | insertion line above |
+| bottom edge | `.after` | the project lands after the row, under the row's parent | insertion line below |
+
+- Edge height: `min(28% of the row, 8 pt)` (`ThingsRowDropZone.zone`). A to-do only uses the middle.
+- An edge drop that is not legal falls back to the middle when that is legal (a loose project dropped on the edge of an Area nests into it). Nothing is highlighted when no zone is legal (self, a descendant, no change).
+- `ThingsProjectOrdering.placement` computes the new parent and the Vikunja `position`: halfway between the two neighbours, `+ 65536` after the last one, half of the first one at the start (`TaskPositioning` rules). When the neighbours share a position (a fresh account has all zeros) the siblings are renumbered in steps of 65536 so the saved order is exact.
+- Written by `AppState.placeProject` (`Features/Things/ThingsProjectActions.swift`): `PUT /projects/{id}` with the full field set plus `position`. `ProjectUpdateRequest` (Core) has no position, hence `ThingsProjectPlacementRequest`. The local list changes first and rolls back on failure.
+- At the top level the sidebar shows loose projects first, then Areas, so an edge drop between a loose project and an Area is refused (`placement` returns nil).
+- A row that shows its children right under it does not accept "after" (the line would be ambiguous); it nests instead.
+- Limits: no auto-unfold of a folded row on hover, no drop on empty sidebar space to move to the top level (use Move Project...), the local cache of projects is not rewritten by `placeProject` (the next refresh is the source of truth).

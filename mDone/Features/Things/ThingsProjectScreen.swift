@@ -1,8 +1,9 @@
 import SwiftUI
 
-/// A project or an Area (spec 02 sections 9 and 10), first version: a flat list
-/// of the open to-dos, with the progress pie for a project and, for an Area,
-/// links to its projects. Headings are a TODO (docs/things-spec/DEVIATIONS.md).
+/// A project or an Area (spec 02 sections 9 and 10), first version: the sub-projects at
+/// the top (nested, foldable, same tree as the Mac sidebar), then a flat list of the open
+/// to-dos, with the progress pie for a project. Headings are a TODO
+/// (docs/things-spec/DEVIATIONS.md).
 struct ThingsProjectScreen: View {
     @State private var viewModel: ThingsListViewModel
     private let projectID: Int64
@@ -27,7 +28,13 @@ struct ThingsProjectScreen: View {
         appState.projects.first { $0.id == projectID }
     }
 
+    private var tree: ThingsProjectTree {
+        ThingsProjectTree.build(projects: appState.projects, inboxProjectID: viewModel.inboxProjectID)
+    }
+
+    /// An Area is any root with sub-projects (or the marker), whatever its description says.
     private var isArea: Bool {
+        if let node = tree.node(id: projectID) { return node.isArea }
         guard let project = project else { return false }
         return ThingsProjectMeta.isArea(project)
     }
@@ -85,6 +92,9 @@ struct ThingsProjectScreen: View {
                 .listRowSeparator(.hidden)
                 .listRowBackground(Color.clear)
             }
+            ForEach(tree.descendantRows(of: projectID, collapsed: appState.collapsedProjectIDs)) { row in
+                childRow(row)
+            }
             ForEach(rows) { row in
                 ThingsRowCell(
                     row: row,
@@ -92,11 +102,6 @@ struct ThingsProjectScreen: View {
                     onOpen: { task in detailTask = task },
                     onWhen: { task in whenTask = task }
                 )
-            }
-            if isArea {
-                ForEach(ThingsProjectMeta.children(of: projectID, in: appState.projects)) { child in
-                    childRow(child)
-                }
             }
             Color.clear
                 .frame(height: ThingsMetrics.Screen.listBottomClearance)
@@ -110,18 +115,42 @@ struct ThingsProjectScreen: View {
         .animation(ThingsMotion.rowRemoval, value: rows.map { $0.id })
     }
 
-    private func childRow(_ child: Project) -> some View {
-        ZStack {
-            NavigationLink(value: ThingsRoute.project(child.id)) { EmptyView() }
+    /// A sub-project line: fold chevron, pie, bold title and the open to-do count. Nested
+    /// levels indent one step each.
+    private func childRow(_ row: ThingsProjectRow) -> some View {
+        let node = row.node
+        let folded = !appState.isProjectExpanded(node.id)
+        let openCount = appState.tasksForProject(node.id).filter { !$0.done }.count
+        return ZStack {
+            NavigationLink(value: ThingsRoute.project(node.id)) { EmptyView() }
                 .opacity(0)
             HStack(spacing: ThingsMetrics.Row.checkboxTitleSpacing) {
-                ThingsProjectPie(progress: viewModel.progress(ofProject: child.id))
-                Text(verbatim: child.title)
-                    .font(ThingsTypography.sidebarRow)
+                ThingsProjectPie(progress: viewModel.progress(ofProject: node.id))
+                Text(verbatim: node.title)
+                    .font(ThingsTypography.sidebarRow.weight(.semibold))
                     .foregroundStyle(palette[.textPrimary])
                     .lineLimit(1)
+                if openCount > 0 {
+                    Text(verbatim: String(openCount))
+                        .font(ThingsTypography.datePill)
+                        .foregroundStyle(palette[.textSecondary])
+                }
                 Spacer(minLength: 0)
+                if node.hasChildren {
+                    Button {
+                        withAnimation(ThingsMotion.rowRemoval) { appState.toggleProjectFold(node.id) }
+                    } label: {
+                        Image(systemName: folded ? "chevron.right" : "chevron.down")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundStyle(palette[.textSecondary])
+                            .frame(width: ThingsMetrics.Icon.list, height: ThingsMetrics.Icon.homeRowHeight)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(folded ? String(localized: "Expand") : String(localized: "Collapse"))
+                }
             }
+            .padding(.leading, CGFloat(row.depth) * ThingsMetrics.Spacing.l)
             .padding(.horizontal, ThingsMetrics.Layout.listHorizontalMargin)
             .frame(minHeight: ThingsMetrics.Icon.homeRowHeight)
         }

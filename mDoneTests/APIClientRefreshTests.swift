@@ -584,11 +584,11 @@ final class APIClientRefreshTests: XCTestCase {
         XCTAssertNotEqual(expiredFlag.value, true)
     }
 
-    /// If the retried request also returns 401 (server raced the rotation, or
-    /// the freshly-issued JWT is somehow already invalid), we still need to
-    /// notify session-expired so AppState can surface the login screen instead
-    /// of leaving the user stuck on a broken-but-not-flagged session.
-    func testRetriedRequestAlso401FiresSessionExpired() async {
+    /// If the retried request also returns 401 after a successful refresh, the
+    /// refresh token was just accepted: the session is alive. Only this one
+    /// request fails. (A route that refuses the user, such as a position update,
+    /// must never log them out.)
+    func testRetriedRequestAlso401DoesNotExpireSession() async {
         let client = makeClient()
         let originalJWT = Self.validJWT()
         let refreshedJWT = Self.validJWT(payloadOverride: ["exp": 9_000_000_000])
@@ -617,20 +617,85 @@ final class APIClientRefreshTests: XCTestCase {
 
         do {
             let _: VTask = try await client.fetch(Endpoint.task(id: 1))
-            XCTFail("Expected unauthorized")
+            XCTFail("Expected an error")
         } catch let error as NetworkError {
-            guard case .unauthorized = error else {
-                return XCTFail("Expected .unauthorized, got \(error)")
+            if case .unauthorized = error {
+                XCTFail("A 401 after a good refresh must not surface as .unauthorized")
             }
         } catch {
             XCTFail("Unexpected error type: \(error)")
         }
 
-        XCTAssertEqual(
-            expiredFlag.value,
-            true,
-            "Persistent 401 after a successful refresh must escalate to session expiry"
+        XCTAssertNil(expiredFlag.value, "Only a rejected refresh token may end the session")
+        let stored = await client.currentRefreshToken()
+        XCTAssertEqual(stored, "refresh-2", "The rotated refresh token must be kept")
+    }
+
+    /// A server that answers the refresh with the very same JWT (same second,
+    /// same claims) must not be read as a failed refresh.
+    func testRefreshReturningIdenticalTokenDoesNotExpireSession() async throws {
+        let client = makeClient()
+        let jwt = Self.validJWT()
+        await client.configure(
+            serverURL: "https://mock.vikunja.io",
+            token: jwt,
+            refreshToken: "refresh-1"
         )
+
+        let expiredFlag = AsyncBox<Bool>()
+        await client.setOnSessionExpired { expiredFlag.set(true) }
+
+        let counter = RequestCounter()
+        MockURLProtocol.requestHandler = { request in
+            let path = request.url?.path ?? ""
+            counter.record(path: path, authorization: request.value(forHTTPHeaderField: "Authorization") ?? "", cookie: nil)
+            if path.hasSuffix("/user/token/refresh") {
+                let resp = MockURLProtocol.makeResponse(statusCode: 200, url: request.url)
+                return (resp, #"{"token":"\#(jwt)"}"#.data(using: .utf8)!)
+            }
+            if counter.count(forPath: path) == 1 {
+                return (MockURLProtocol.makeResponse(statusCode: 401, url: request.url), Data())
+            }
+            return (MockURLProtocol.makeResponse(statusCode: 200, url: request.url), Self.sampleTaskJSON(id: 1))
+        }
+
+        let task: VTask = try await client.fetch(Endpoint.task(id: 1))
+        XCTAssertEqual(task.id, 1)
+        XCTAssertNil(expiredFlag.value)
+    }
+
+    /// A position update that the server refuses with a 4xx other than 401
+    /// (bad view, forbidden, validation) is a plain error: no session expiry.
+    func testPositionUpdateClientErrorsNeverExpireSession() async {
+        for status in [400, 403, 404, 422] {
+            let client = makeClient()
+            await client.configure(
+                serverURL: "https://mock.vikunja.io",
+                token: Self.validJWT(),
+                refreshToken: "refresh-1"
+            )
+            let expiredFlag = AsyncBox<Bool>()
+            await client.setOnSessionExpired { expiredFlag.set(true) }
+
+            MockURLProtocol.requestHandler = { request in
+                (MockURLProtocol.makeResponse(statusCode: status, url: request.url), Data())
+            }
+
+            let service = TaskService(apiClient: client)
+            do {
+                try await service.updatePosition(taskId: 1, position: 10, viewId: 5)
+                XCTFail("Expected an error for HTTP \(status)")
+            } catch let error as NetworkError {
+                if case .unauthorized = error {
+                    XCTFail("HTTP \(status) must not map to .unauthorized")
+                }
+            } catch {
+                XCTFail("Unexpected error type: \(error)")
+            }
+            XCTAssertNil(expiredFlag.value, "HTTP \(status) on a position update must not end the session")
+            let stored = await client.currentRefreshToken()
+            XCTAssertEqual(stored, "refresh-1")
+        }
     }
 
     // MARK: - Helpers

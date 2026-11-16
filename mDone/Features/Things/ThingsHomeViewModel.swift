@@ -1,17 +1,5 @@
 import Foundation
 
-/// A project or Area line of the Home screen.
-struct ThingsHomeProject: Identifiable {
-    let project: Project
-    let kind: ThingsProjectKind
-    /// 0 to 1, 0 for an Area.
-    let progress: Double
-    /// Projects under an Area, empty for anything else.
-    let children: [ThingsHomeProject]
-
-    var id: Int64 { project.id }
-}
-
 /// View model of the Home screen (spec 02 section 1). A facade over `AppState`.
 @Observable
 @MainActor
@@ -37,30 +25,41 @@ final class ThingsHomeViewModel {
 
     private var inboxProjectID: Int64? { lists.inboxProjectID }
 
-    /// Root projects that belong to no Area, in display order.
-    var looseProjects: [ThingsHomeProject] {
-        ThingsProjectMeta.looseProjects(in: realProjects, inboxProjectID: inboxProjectID)
-            .map { entry(for: $0, kind: .project, children: []) }
+    /// The full project tree (Areas, projects, any depth). Same builder as the Mac
+    /// sidebar, so both platforms show the same hierarchy.
+    var tree: ThingsProjectTree {
+        ThingsProjectTree.build(projects: appState.projects, inboxProjectID: inboxProjectID)
     }
 
-    /// Areas with their projects.
-    var areas: [ThingsHomeProject] {
-        ThingsProjectMeta.areas(in: realProjects).map { area in
-            let kids = ThingsProjectMeta.children(of: area.id, in: realProjects)
-                .map { entry(for: $0, kind: .project, children: []) }
-            return entry(for: area, kind: .area, children: kids)
-        }
+    /// Share of finished to-dos of a project, 0 for an Area or an empty project.
+    func progress(of node: ThingsProjectNode) -> Double {
+        node.isArea ? 0 : lists.progress(ofProject: node.id)
     }
 
-    /// Saved filters and pseudo-projects have negative ids and are not Things lists.
-    private var realProjects: [Project] {
-        appState.projects.filter { $0.id > 0 && $0.isArchived != true }
+    /// Open to-dos directly in a project (the badge of a sub-project row).
+    func openCount(of node: ThingsProjectNode) -> Int {
+        appState.tasksForProject(node.id).filter { !$0.done }.count
     }
 
-    private func entry(for project: Project, kind: ThingsProjectKind, children: [ThingsHomeProject]) -> ThingsHomeProject {
-        let progress = kind == .area ? 0 : lists.progress(ofProject: project.id)
-        return ThingsHomeProject(project: project, kind: kind, progress: progress, children: children)
+    /// Ids of the folded projects, read so views redraw when it changes.
+    var collapsedIDs: Set<Int64> { appState.collapsedProjectIDs }
+
+    /// Whether the children of a project are folded.
+    func isFolded(_ id: Int64) -> Bool {
+        !appState.isProjectExpanded(id)
     }
+
+    func toggleFold(_ id: Int64) {
+        appState.toggleProjectFold(id)
+    }
+
+    func setAllExpanded(_ expanded: Bool) {
+        appState.setAllProjectsExpanded(expanded, tree: tree)
+    }
+
+    /// The parent a new project is created under when the caller names none: the
+    /// Area or project on screen. Set by the screens, nil on a built-in list.
+    var parentForNewProject: Int64?
 
     /// Open to-dos whose title contains `query`, for the search field (a light
     /// stand-in for Quick Find).
@@ -83,17 +82,26 @@ final class ThingsHomeViewModel {
         await appState.refreshAll()
     }
 
-    /// Creates a project, nested under `areaID` when given.
+    /// Creates a project, nested under `areaID` (or `parentForNewProject`) when given.
+    /// The parent is unfolded so the new row is visible.
     @discardableResult
     func createProject(title: String, inArea areaID: Int64? = nil) async -> Project? {
-        await appState.createProject(title: title, parentProjectId: areaID)
+        let parent = areaID ?? parentForNewProject
+        let created = await appState.createProject(
+            title: ThingsProjectTitle.normalized(title),
+            parentProjectId: parent
+        )
+        if created != nil, let parent = parent { appState.setProjectExpanded(true, for: parent) }
+        return created
     }
 
     /// Creates an Area: a root project whose description starts with the marker (07 section 2).
+    /// The marker keeps it an Area while it is still empty; once it has children the tree
+    /// rule makes it one anyway.
     @discardableResult
     func createArea(title: String) async -> Project? {
         await appState.createProject(
-            title: title,
+            title: ThingsProjectTitle.normalized(title),
             description: ThingsProjectMeta.addingAreaMarker(to: nil)
         )
     }

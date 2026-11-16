@@ -106,13 +106,23 @@ final class ThingsProjectTreeTests: XCTestCase {
         XCTAssertEqual(ids(tree.allNodes), [2])
     }
 
-    func testChildrenOfInboxMoveToRoot() {
+    func testInboxWithChildrenIsKeptSoItsSubtreeStaysVisible() {
+        // The Inbox id can be a guess (first project when none is called "Inbox"):
+        // hiding it would hide its whole subtree.
         let projects = [project(1, "Inbox"), project(2, "Under inbox", parent: 1)]
+        let tree = ThingsProjectTree.build(projects: projects, inboxProjectID: 1)
+        XCTAssertEqual(ids(tree.roots), [1])
+        XCTAssertEqual(ids(tree.allNodes), [1, 2])
+        XCTAssertEqual(tree.roots.first?.kind, .area)
+    }
+
+    func testChildlessInboxStaysOutOfTheTree() {
+        let projects = [project(1, "Inbox"), project(2, "Other")]
         let tree = ThingsProjectTree.build(projects: projects, inboxProjectID: 1)
         XCTAssertEqual(ids(tree.roots), [2])
     }
 
-    func testArchivedExcludedWithSubtree() {
+    func testArchivedHiddenButLiveChildrenSurfaceAtRoot() {
         let projects = [
             project(1, "Area"),
             project(2, "Archived", parent: 1, archived: true),
@@ -120,7 +130,9 @@ final class ThingsProjectTreeTests: XCTestCase {
             project(4, "Live", parent: 1)
         ]
         let tree = ThingsProjectTree.build(projects: projects, inboxProjectID: nil)
-        XCTAssertEqual(ids(tree.allNodes), [1, 4])
+        XCTAssertEqual(ids(tree.allNodes), [1, 4, 3])
+        XCTAssertEqual(ids(tree.roots), [1, 3])
+        XCTAssertNil(tree.node(id: 2))
     }
 
     func testUnknownParentIsShownAsRoot() {

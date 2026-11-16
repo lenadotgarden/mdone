@@ -41,7 +41,8 @@ private struct ThingsDropVisual {
 ///
 /// - selection and keyboard: Up and Down move between rows across sections, Opt
 ///   jumps to the first or last, Return opens the card, Esc clears the
-///   selection, Delete asks to delete, Space is swallowed;
+///   selection, Delete and Backspace delete at once (Things relies on undo), Space opens a
+///   new to-do below the selection;
 /// - drag and drop: every row is a system drag source (`onDrag`, payload
 ///   `ThingsDragPayload.todo`), so it can be dropped on a sidebar row as well as inside
 ///   the list. The list is one `DropDelegate`: while a to-do hovers, the insertion slot
@@ -49,9 +50,11 @@ private struct ThingsDropVisual {
 ///   through `ThingsDropPlan`, `ThingsListViewModel.commitDrop` and `AppState.moveTask`.
 ///   Today and project screens also accept a drop in another section where it means
 ///   something (This Evening, Someday), see `ThingsDropRules`;
-/// - Cmd Opt Up and Cmd Opt Down (also Cmd Up and Cmd Down) swap the selected to-do with
-///   its neighbour with the same spring, and the accessibility actions Move Up, Move Down
-///   and Move to <section> do the same without a pointer;
+/// - Cmd Up and Cmd Down swap the selected to-do with its neighbour, Opt Cmd Up and Opt Cmd
+///   Down send it to the top or the bottom of its section, with the same spring; the keys
+///   do nothing with no selection or a read-only section. The accessibility actions Move
+///   Up, Move Down and Move to <section> do the same without a pointer;
+/// - every move, delete, completion and edit is an undo step (`ThingsMacModel+Undo`);
 /// - the open card replaces its row, a context menu.
 struct ThingsMacTodoList: View {
     let sections: [ThingsMacSectionData]
@@ -66,6 +69,9 @@ struct ThingsMacTodoList: View {
     @State private var inflight: [String: Int] = [:]
     @State private var dropSlot: ThingsDropSlot?
     @State private var frameStore = ThingsRowFrameStore()
+    /// True for a moment after a drop: the rows land in their final place without animating, so
+    /// the dragged row is dropped exactly in the gap with no second reflow.
+    @State private var isLanding = false
     @Environment(\.colorScheme) private var scheme
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -118,7 +124,7 @@ struct ThingsMacTodoList: View {
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 0) {
                     header
-                    if model.isAddingTodo {
+                    if model.isAddingTodo && model.insertAfterTaskID == nil {
                         ThingsInlineAddRow { title in model.finishAdding(title: title) }
                     }
                     if ids.isEmpty && !model.isAddingTodo, let empty = empty {
@@ -162,7 +168,7 @@ struct ThingsMacTodoList: View {
             .onChange(of: model.listFocusToken) { _, _ in listFocused = true }
             // Membership changes (a to-do leaves) use the removal animation. A reorder
             // keeps the same set of ids, so the spring of the move is not overridden.
-            .animation(ThingsMotion.rowRemoval, value: Set(ids))
+            .animation(ThingsMotion.resolved(ThingsMotion.rowRemoval, reduceMotion: reduceMotion), value: Set(ids))
         }
     }
 
@@ -170,10 +176,11 @@ struct ThingsMacTodoList: View {
 
     /// Arrow keys move the selection (also across sections), Opt arrow jumps to the
     /// ends, Cmd Opt arrow and Cmd arrow move the selected to-do, Return opens the card,
-    /// Esc clears the selection, Delete asks to delete (spec 05). With a card open the keys
-    /// belong to its text fields.
+    /// Esc clears the selection, Delete, Backspace and Cmd Backspace delete the selection
+    /// at once (undo brings it back), Space adds a to-do below it (spec 05). With a card
+    /// open the keys belong to its text fields.
     private func handleKey(_ press: KeyPress, proxy: ScrollViewProxy) -> KeyPress.Result {
-        if model.expandedTaskID != nil { return .ignored }
+        if model.expandedTaskID != nil || model.isAddingTodo { return .ignored }
         let option = press.modifiers.contains(.option)
         let command = press.modifiers.contains(.command)
         let shift = press.modifiers.contains(.shift)
@@ -183,7 +190,7 @@ struct ThingsMacTodoList: View {
         if press.key == .upArrow || press.key == .downArrow {
             let step = (press.key == .upArrow) ? -1 : 1
             if command {
-                moveSelected(by: step, proxy: proxy)
+                moveSelected(by: step, toEnd: option, proxy: proxy)
                 return .handled
             }
             if shift { return .ignored }
@@ -194,21 +201,25 @@ struct ThingsMacTodoList: View {
             }
             return .handled
         }
+        // Backspace and Forward Delete, with or without Cmd. Only the first press of the
+        // key counts: holding it must not run through the whole list.
+        if press.key == .delete || press.key == .deleteForward {
+            if option || shift { return .ignored }
+            if model.selectedTaskID == nil { return .ignored }
+            if press.phase == .down { model.deleteSelected() }
+            return .handled
+        }
         if command { return .ignored }
         if press.key == .return && model.selectedTaskID != nil {
             model.openSelected()
-            return .handled
-        }
-        if (press.key == .delete || press.key == .deleteForward) && model.selectedTaskID != nil {
-            model.requestDeleteSelected()
             return .handled
         }
         if press.key == .escape && model.selectedTaskID != nil {
             model.select(nil)
             return .handled
         }
-        if press.key == .space && !option {
-            // Space (new to-do below the selection) is a TODO: swallow it instead of beeping.
+        if press.key == .space && !option && !shift {
+            if press.phase == .down { model.addTodoFromSpace() }
             return .handled
         }
         return .ignored
@@ -216,15 +227,25 @@ struct ThingsMacTodoList: View {
 
     // MARK: - Reordering
 
-    /// Moves the selected to-do one place up or down inside its section, animated.
-    private func moveSelected(by step: Int, proxy: ScrollViewProxy) {
-        guard let id = model.selectedTaskID, model.expandedTaskID == nil, dropSlot == nil else { return }
+    /// Moves the selected to-do one place up or down inside its section, animated (Cmd Up,
+    /// Cmd Down), or with `toEnd` to the top or the bottom of the section (Opt Cmd Up,
+    /// Opt Cmd Down).
+    private func moveSelected(by step: Int, toEnd: Bool, proxy: ScrollViewProxy) {
+        // Ignored with no selection, a read-only list, a drag in progress, a save still
+        // running (a held key would pile up requests on stale positions) or a to-do the
+        // store no longer has.
+        guard let id = model.selectedTaskID, model.expandedTaskID == nil, dropSlot == nil,
+              inflight.isEmpty, !model.visibleTaskIDs.isEmpty,
+              model.appState.tasks.contains(where: { $0.id == id }) else { return }
         for section in shownSections where section.allowsReorder {
             guard section.rows.contains(where: { $0.task.id == id }) else { continue }
             let tasks = section.rows.map { $0.task }
-            guard let plan = ThingsReorder.plan(sectionID: section.id, tasks: tasks, movingID: id, by: step) else {
-                return
-            }
+            let wanted = toEnd
+                ? ThingsReorder.plan(
+                    sectionID: section.id, tasks: tasks, movingID: id, toOffset: step < 0 ? 0 : tasks.count
+                )
+                : ThingsReorder.plan(sectionID: section.id, tasks: tasks, movingID: id, by: step)
+            guard let plan = wanted else { return }
             apply(.reorder(plan), animation: ThingsMotion.reorderSwap)
             withAnimation(ThingsMotion.resolved(ThingsMotion.reorderSwap, reduceMotion: reduceMotion)) {
                 proxy.scrollTo(id)
@@ -236,33 +257,96 @@ struct ThingsMacTodoList: View {
     /// Shows the new order at once, then saves it. The shown order stays until the last
     /// request of every section the plan touches has finished and the server order is
     /// back; if the save failed the rows then slide back to where they were (rollback).
-    private func apply(_ plan: ThingsDropPlan, animation: Animation) {
+    ///
+    /// `landing` is a drop: the order, the end of the gap and the source row all change in
+    /// one transaction without animation, so the dragged row appears exactly where the gap
+    /// was and nothing moves a second time. A keyboard move animates with `animation`.
+    private func apply(_ plan: ThingsDropPlan, animation: Animation, landing: Bool = false) {
         let overrides = plan.overrides
-        withAnimation(ThingsMotion.resolved(animation, reduceMotion: reduceMotion)) {
+        let before = shownSections
+        let update = {
             for (sectionID, order) in overrides {
                 orderOverride[sectionID] = order
                 inflight[sectionID, default: 0] += 1
             }
             dropSlot = nil
         }
+        if landing || reduceMotion {
+            isLanding = true
+            var transaction = Transaction(animation: nil)
+            transaction.disablesAnimations = true
+            withTransaction(transaction) { update() }
+            Task { @MainActor in
+                try? await Task.sleep(nanoseconds: 150_000_000)
+                isLanding = false
+            }
+        } else {
+            withAnimation(animation) { update() }
+        }
         let listModel = viewModel
         let state = model.appState
         let touched = Array(overrides.keys)
         Task { @MainActor in
-            _ = await listModel.commitDrop(plan, appState: state)
-            for sectionID in touched { finishReorder(sectionID: sectionID) }
+            let saved = await listModel.commitDrop(plan, appState: state)
+            if saved { recordUndoStep(for: plan, before: before) }
+            for sectionID in touched { finishReorder(sectionID: sectionID, saved: saved) }
         }
     }
 
-    private func finishReorder(sectionID: String) {
+    /// Records the undo step of a saved move: back to the old position, and for a move into
+    /// another section back to the old When.
+    private func recordUndoStep(for plan: ThingsDropPlan, before: [ThingsMacSectionData]) {
+        switch plan {
+        case .reorder(let reorder):
+            let old = oldPosition(of: reorder.task, inSection: reorder.sectionID, before: before)
+            model.recordReorder(
+                taskID: reorder.task.id,
+                oldPosition: old,
+                newPosition: reorder.position,
+                previousWhen: nil,
+                newWhen: nil,
+                listModel: viewModel
+            )
+        case .changeSection(let move):
+            let old = oldPosition(of: move.task, inSection: move.fromSectionID, before: before)
+            model.recordReorder(
+                taskID: move.task.id,
+                oldPosition: old,
+                newPosition: move.position,
+                previousWhen: ThingsWhenState(task: move.task),
+                newWhen: move.when,
+                listModel: viewModel
+            )
+        }
+    }
+
+    /// The position the to-do had: its own when the server gave one, else a number between
+    /// its old neighbours.
+    private func oldPosition(of task: VTask, inSection sectionID: String, before: [ThingsMacSectionData]) -> Double {
+        if let own = task.position, own > 0 { return own }
+        let tasks = before.first(where: { $0.id == sectionID })?.rows.map { $0.task } ?? []
+        let index = tasks.firstIndex(where: { $0.id == task.id }) ?? 0
+        return TaskPositioning.position(forInserting: task, at: index, into: tasks)
+    }
+
+    /// Drops the shown order once the save is over. A saved move changes nothing on screen
+    /// (the server order equals the shown one), so it is removed without animation; a failed
+    /// one slides back.
+    private func finishReorder(sectionID: String, saved: Bool) {
         let remaining = (inflight[sectionID] ?? 1) - 1
         if remaining > 0 {
             inflight[sectionID] = remaining
             return
         }
         inflight[sectionID] = nil
-        withAnimation(ThingsMotion.resolved(ThingsMotion.reorder, reduceMotion: reduceMotion)) {
-            orderOverride[sectionID] = nil
+        if saved {
+            var transaction = Transaction(animation: nil)
+            transaction.disablesAnimations = true
+            withTransaction(transaction) { orderOverride[sectionID] = nil }
+        } else {
+            withAnimation(ThingsMotion.resolved(ThingsMotion.reorder, reduceMotion: reduceMotion)) {
+                orderOverride[sectionID] = nil
+            }
         }
     }
 
@@ -310,7 +394,7 @@ struct ThingsMacTodoList: View {
         }
         guard let plan = ThingsDropPlan.make(slot: slot, movingID: id, sections: tasks) else { return false }
         NSHapticFeedbackManager.defaultPerformer.perform(.alignment, performanceTime: .now)
-        apply(plan, animation: ThingsMotion.reorder)
+        apply(plan, animation: ThingsMotion.reorder, landing: true)
         return true
     }
 
@@ -361,6 +445,11 @@ struct ThingsMacTodoList: View {
         }
         ForEach(Array(section.rows.enumerated()), id: \.element.id) { entry in
             rowView(entry.element, index: entry.offset, in: section, drop: drop)
+            if model.isAddingTodo && model.insertAfterTaskID == entry.element.task.id {
+                ThingsInlineAddRow { title in
+                    model.finishAdding(title: title, siblings: section.rows.map { $0.task })
+                }
+            }
         }
     }
 
@@ -415,8 +504,13 @@ struct ThingsMacTodoList: View {
             )
             .contentShape(Rectangle())
             .opacity(isSource ? 0 : 1)
+            // The source row hides and shows at once: no fade when it lands.
+            .animation(nil, value: isSource)
             .offset(y: slide)
-            .animation(ThingsMotion.resolved(ThingsMotion.reorder, reduceMotion: reduceMotion), value: slide)
+            .animation(
+                isLanding ? nil : ThingsMotion.resolved(ThingsMotion.reorder, reduceMotion: reduceMotion),
+                value: slide
+            )
             .onTapGesture(count: 2) { model.open(id) }
             .onTapGesture {
                 model.select(id)
@@ -430,6 +524,9 @@ struct ThingsMacTodoList: View {
         }
         .background(frameReader(id))
         .contextMenu { contextMenu(for: row.task, moves: moves) }
+        .popover(item: rowPopoverBinding(for: id), arrowEdge: .bottom) { popover in
+            rowPopoverContent(popover, task: row.task)
+        }
         .id(id)
         .accessibilityAction(named: Text("Move Up")) { moveByAccessibility(id, -1) }
         .accessibilityAction(named: Text("Move Down")) { moveByAccessibility(id, 1) }
@@ -437,6 +534,29 @@ struct ThingsMacTodoList: View {
             ForEach(moves, id: \.sectionID) { move in
                 Button(sectionMoveTitle(move.when)) { moveToSection(id, sectionID: move.sectionID) }
             }
+        }
+    }
+
+    /// The When or Deadline popover of this row, shown by Cmd S and Shift Cmd D.
+    private func rowPopoverBinding(for id: Int64) -> Binding<ThingsMacRowPopover?> {
+        Binding(
+            get: { model.rowPopover?.taskID == id ? model.rowPopover : nil },
+            set: { newValue in
+                if newValue == nil && model.rowPopover?.taskID == id { model.closeRowPopover() }
+            }
+        )
+    }
+
+    @ViewBuilder
+    private func rowPopoverContent(_ popover: ThingsMacRowPopover, task: VTask) -> some View {
+        let live = model.appState.tasks.first(where: { $0.id == popover.taskID }) ?? task
+        switch popover.kind {
+        case .when:
+            ThingsMacWhenPopover(task: live, model: model, onClose: { model.closeRowPopover() })
+        case .deadline:
+            ThingsMacDeadlinePopover(task: live, model: model, onClose: { model.closeRowPopover() })
+        case .tags, .move:
+            EmptyView()
         }
     }
 
@@ -488,14 +608,14 @@ struct ThingsMacTodoList: View {
             model.select(task.id)
             model.cancelSelected()
         } else {
-            viewModel.tapCheckbox(task)
+            model.tapCheckbox(task)
         }
     }
 
     @ViewBuilder
     private func contextMenu(for task: VTask, moves: [ThingsSectionMove]) -> some View {
         Button(String(localized: "Open")) { model.open(task.id) }
-        Button(String(localized: "Complete")) { viewModel.tapCheckbox(task) }
+        Button(String(localized: "Complete")) { model.tapCheckbox(task) }
         Menu(String(localized: "When")) {
             Button(String(localized: "Today")) { schedule(task, .today) }
             Button(String(localized: "This Evening")) { schedule(task, .thisEvening) }
