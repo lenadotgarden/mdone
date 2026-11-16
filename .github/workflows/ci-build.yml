@@ -53,7 +53,7 @@ jobs:
         run: |
           set -o pipefail
           xcodebuild -project mDone.xcodeproj -scheme mDone-macOS -destination 'platform=macOS' \
-            -only-testing:mDoneMacTests/ThingsListBuilderTests \
+            -only-testing:mDoneMacTests/ThingsListBuilderTests -only-testing:mDoneMacTests/ThingsMappingTests \
             CODE_SIGN_IDENTITY=- CODE_SIGNING_REQUIRED=NO CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM= \
             CODE_SIGN_ENTITLEMENTS=mDone/mDone-macOS-CI.entitlements \
             test 2>&1 | tee test.log | grep -E "error:|Test Case.*(passed|failed)|Executed|TEST (SUCCEEDED|FAILED)" || true
