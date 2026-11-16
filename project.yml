@@ -36,12 +36,12 @@ settings:
     # MDONE_APP_GROUP must match StorageScope.appGroupID in mDoneShared.
     MDONE_BUNDLE_ID: com.mdone.app
     MDONE_APP_GROUP: group.com.mdone.app
-    MDONE_DISPLAY_NAME: mDone
+    MDONE_DISPLAY_NAME: Fern
   configs:
     Debug:
       MDONE_BUNDLE_ID: com.mdone.app.dev
       MDONE_APP_GROUP: group.com.mdone.app.dev
-      MDONE_DISPLAY_NAME: mDone Dev
+      MDONE_DISPLAY_NAME: Fern Dev
       # Same XcodeGen 2.45.4 regression: the historical Debug default of
       # ENABLE_TESTABILITY=YES is no longer emitted, so the app module is
       # built without -enable-testing and every `@testable import mDone`
@@ -167,7 +167,7 @@ targets:
     info:
       path: mDoneWidgets/Info.plist
       properties:
-        CFBundleDisplayName: mDone Focus
+        CFBundleDisplayName: Fern Focus
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         NSExtension:
@@ -196,7 +196,7 @@ targets:
     info:
       path: mDoneMacWidgets/Info.plist
       properties:
-        CFBundleDisplayName: mDone
+        CFBundleDisplayName: Fern
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         NSExtension:
