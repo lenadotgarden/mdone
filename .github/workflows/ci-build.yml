@@ -1,0 +1,45 @@
+name: Build check
+
+# Compilation rapide iOS + macOS sur chaque push de branche, sans tests.
+# C'est la boucle de feedback principale (pas de compilateur Swift local).
+on:
+  push:
+    branches-ignore: [gh-pages]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  layering:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - run: scripts/check-layering.sh
+  build:
+    name: Build ${{ matrix.name }}
+    runs-on: macos-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: iOS
+            scheme: mDone
+            destination: generic/platform=iOS Simulator
+          - name: macOS
+            scheme: mDone-macOS
+            destination: platform=macOS
+    steps:
+      - uses: actions/checkout@v7
+      - run: brew install xcodegen && xcodegen generate
+      - name: Build
+        run: |
+          set -o pipefail
+          xcodebuild -project mDone.xcodeproj -scheme "${{ matrix.scheme }}" \
+            -destination "${{ matrix.destination }}" \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO \
+            build-for-testing 2>&1 | tee build.log | grep -E "error:|warning: unre|BUILD|\*\* " || true
+          grep -q "BUILD SUCCEEDED\|TEST BUILD SUCCEEDED" build.log
+      - name: Errors
+        if: failure()
+        run: grep -E "error:" build.log | sort -u | head -60
