@@ -6,7 +6,8 @@
 # they are excluded rather than dragging the figure down. Test targets are
 # excluded because their own lines are always executed.
 ignore:
-  - "mDone/Views/**"
+  - "mDone/Features/**"
+  - "mDone/Platform/**"
   - "mDoneTests/**"
   - "mDoneUITests/**"
   - "mDoneMacUITests/**"
