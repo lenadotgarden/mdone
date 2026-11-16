@@ -43,3 +43,18 @@ jobs:
       - name: Errors
         if: failure()
         run: grep -E "error:" build.log | sort -u | head -60
+  domain-tests:
+    name: Domain tests (macOS)
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v7
+      - run: brew install xcodegen && xcodegen generate
+      - name: Run Domain tests
+        run: |
+          set -o pipefail
+          xcodebuild -project mDone.xcodeproj -scheme mDone-macOS -destination 'platform=macOS' \
+            -only-testing:mDoneMacTests/ThingsListBuilderTests \
+            CODE_SIGN_IDENTITY=- CODE_SIGNING_REQUIRED=NO CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM= \
+            CODE_SIGN_ENTITLEMENTS=mDone/mDone-macOS-CI.entitlements \
+            test 2>&1 | tee test.log | grep -E "error:|Test Case.*(passed|failed)|Executed|TEST (SUCCEEDED|FAILED)" || true
+          grep -q "TEST SUCCEEDED" test.log
