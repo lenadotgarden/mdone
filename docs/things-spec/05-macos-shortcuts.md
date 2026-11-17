@@ -1,28 +1,28 @@
-# 05 - Raccourcis clavier Mac
+# 05 - Mac keyboard shortcuts
 
-Source unique et intégralement relue : https://culturedcode.com/things/support/articles/2785159/ (Keyboard Shortcuts for Mac), 2026-11-16 `[VERIFIED]`. Ordre des modificateurs : Ctrl, Opt, Shift, Cmd. Notation : C = Cmd, O = Opt, S = Shift, Ct = Ctrl.
+Single, fully reviewed source: https://culturedcode.com/things/support/articles/2785159/ (Keyboard Shortcuts for Mac), 2026-11-16 `[VERIFIED]`. Modifier order: Ctrl, Opt, Shift, Cmd. Notation: C = Cmd, O = Opt, S = Shift, Ct = Ctrl.
 
-Remarque : la page est localisée par disposition de clavier (macOS Monterey ou plus récent : choisir sa disposition). La table ci-dessous est celle pour clavier US `[VERIFIED]`.
+Note: the page is localized by keyboard layout (macOS Monterey or later: choose your layout). The table below is the one for a US keyboard `[VERIFIED]`.
 
-Toute commande visible dans les menus peut recevoir un raccourci personnalisé dans Réglages Système > Clavier > Raccourcis `[VERIFIED]`.
+Any command visible in the menus can get a custom shortcut in System Settings > Keyboard > Shortcuts `[VERIFIED]`.
 
-## Créer
+## Create
 
-| Action | Raccourci |
+| Action | Shortcut |
 |-|-|
 | New to-do | Cmd N |
 | New to-do below selection | Space |
-| New to-dos from clipboard (un par ligne) | Cmd V |
+| New to-dos from clipboard (one per line) | Cmd V |
 | New checklist in open to-do | Shift Cmd C |
 | New project | Opt Cmd N |
 | New heading | Shift Cmd N |
 | New heading with selection | Opt Shift Cmd N |
-| Open Quick Entry (global) | Ctrl Space (réglable : Things > Settings > Quick Entry) |
-| Open Quick Entry with Autofill (global) | Ctrl Opt Space (réglable) |
+| Open Quick Entry (global) | Ctrl Space (adjustable: Things > Settings > Quick Entry) |
+| Open Quick Entry with Autofill (global) | Ctrl Opt Space (adjustable) |
 
-## Éditer
+## Edit
 
-| Action | Raccourci |
+| Action | Shortcut |
 |-|-|
 | Open selected item | Return |
 | Save and close item | Cmd Return |
@@ -30,12 +30,12 @@ Toute commande visible dans les menus peut recevoir un raccourci personnalisé d
 | Copy to-do or project | Cmd C |
 | Paste to-do or project | Cmd V |
 | Complete selected item | Cmd K |
-| Cancel selected item | Opt Cmd K (ou Opt + clic sur la checkbox) |
+| Cancel selected item | Opt Cmd K (or Opt + click on the checkbox) |
 | Move completed to Logbook | Shift Cmd Y |
 
-## Sélectionner
+## Select
 
-| Action | Raccourci |
+| Action | Shortcut |
 |-|-|
 | Select first | Opt Up |
 | Select last | Opt Down |
@@ -43,11 +43,11 @@ Toute commande visible dans les menus peut recevoir un raccourci personnalisé d
 | Extend selection downwards | Shift Down |
 | Extend selection to top | Opt Shift Up |
 | Extend selection to bottom | Opt Shift Down |
-| Select all | Cmd A (deux fois pour étendre au-delà de la section courante) |
+| Select all | Cmd A (twice to extend beyond the current section) |
 
-## Déplacer
+## Move
 
-| Action | Raccourci |
+| Action | Shortcut |
 |-|-|
 | Move item to another list | Shift Cmd M |
 | Move copied item to here | Opt Cmd V |
@@ -58,7 +58,7 @@ Toute commande visible dans les menus peut recevoir un raccourci personnalisé d
 
 ## Dates
 
-| Action | Raccourci |
+| Action | Shortcut |
 |-|-|
 | Show When | Cmd S |
 | Start Today | Cmd T |
@@ -76,26 +76,26 @@ Toute commande visible dans les menus peut recevoir un raccourci personnalisé d
 | Deadline -1 week | Ctrl Shift , |
 | Add repetition schedule | Shift Cmd R |
 
-Le texte de la page décrit "Clear" comme retirer la deadline/start date via le popover correspondant `[VERIFIED]` (infobulle sur "Add a Deadline").
+The page text describes "Clear" as removing the deadline/start date through the matching popover `[VERIFIED]` (tooltip on "Add a Deadline").
 
-## Fenêtres
+## Windows
 
-| Action | Raccourci |
+| Action | Shortcut |
 |-|-|
 | Open new window | Ctrl Cmd N |
 | Show/hide sidebar | Cmd / |
 | Show/hide toolbar | Opt Cmd T |
-| Open a list from Quick Find in new window | Cmd Return ou Cmd + clic |
-| Open a project or area in new window (projet sélectionné dans une liste) | Cmd Return ou Cmd + double-clic |
-| Open project or area in new window (clic sur titre de projet/area) | Cmd + clic |
-| Open same list in new window | Opt + bouton New Window (coin haut droit) |
-| Open a Things URL in new window | Cmd + clic |
+| Open a list from Quick Find in new window | Cmd Return or Cmd + click |
+| Open a project or area in new window (project selected in a list) | Cmd Return or Cmd + double-click |
+| Open project or area in new window (click on the project/area title) | Cmd + click |
+| Open same list in new window | Opt + New Window button (top right corner) |
+| Open a Things URL in new window | Cmd + click |
 
-## Recherche
+## Search
 
-| Action | Raccourci |
+| Action | Shortcut |
 |-|-|
-| Search the app (Quick Find) | Cmd F (inutile : taper directement, Type Travel) |
+| Search the app (Quick Find) | Cmd F (pointless: just type, Type Travel) |
 | Find in text | Shift Cmd F |
 | Find & Replace in text | Opt Shift Cmd F |
 | Find next in text | Cmd G |
@@ -103,7 +103,7 @@ Le texte de la page décrit "Clear" comme retirer la deadline/start date via le 
 
 ## Navigation
 
-| Action | Raccourci |
+| Action | Shortcut |
 |-|-|
 | Show navigation popover | Shift Cmd O |
 | Go to Inbox | Cmd 1 |
@@ -113,52 +113,52 @@ Le texte de la page décrit "Clear" comme retirer la deadline/start date via le 
 | Go to Someday | Cmd 5 |
 | Go to Logbook | Cmd 6 |
 | Show in parent list | Cmd L |
-| Enter selected project | Return ou Cmd Right |
+| Enter selected project | Return or Cmd Right |
 | Go back | Cmd Left |
 | Scroll up / down | fn Up / fn Down |
 | Jump to top / bottom | fn Left / fn Right |
 | Navigate up in sidebar | Ctrl Opt Cmd Up |
 | Navigate down in sidebar | Ctrl Opt Cmd Down |
-| View Tomorrow list | Cmd F puis "Tomo..." |
-| View Deadlines list | Cmd F puis "Dead..." |
-| View Repeating items list | Cmd F puis "Repe..." |
-| View All Projects list | Cmd F puis "Proj..." |
-| View Logged Projects list | Cmd F puis "Logg..." |
+| View Tomorrow list | Cmd F then "Tomo..." |
+| View Deadlines list | Cmd F then "Dead..." |
+| View Repeating items list | Cmd F then "Repe..." |
+| View All Projects list | Cmd F then "Proj..." |
+| View Logged Projects list | Cmd F then "Logg..." |
 
-Type Travel : taper le nom de la liste ou du tag, puis Return `[VERIFIED]`.
+Type Travel: type the name of the list or the tag, then Return `[VERIFIED]`.
 
-## Tags et filtres
+## Tags and filters
 
-| Action | Raccourci |
+| Action | Shortcut |
 |-|-|
 | Open tag window | Ctrl Cmd T |
-| Edit tags for selected item | Shift Cmd T (curseur dans le titre d'un projet/area : saute au champ tag) |
-| Toggle tag on/off for selected item | Ctrl + raccourci personnalisé du tag (défini dans Window > Tags) |
-| Filter by tag | Ctrl Opt + raccourci du tag |
-| Filter by multiple tags | Cmd + clic sur les tags |
+| Edit tags for selected item | Shift Cmd T (cursor in the title of a project/area: jumps to the tag field) |
+| Toggle tag on/off for selected item | Ctrl + custom shortcut of the tag (defined in Window > Tags) |
+| Filter by tag | Ctrl Opt + shortcut of the tag |
+| Filter by multiple tags | Cmd + click on the tags |
 | Escape filtered state | Ctrl Esc |
 
-## Liens
+## Links
 
-| Action | Raccourci |
+| Action | Shortcut |
 |-|-|
-| Open link (curseur dans/à côté d'une URL ; tous les liens d'une sélection) | Opt Cmd Return |
-| Open link in background | Cmd + clic |
+| Open link (cursor in/next to a URL; all links of a selection) | Opt Cmd Return |
+| Open link in background | Cmd + click |
 
-## Divers
+## Misc
 
-| Action | Raccourci |
+| Action | Shortcut |
 |-|-|
 | Show/Hide later items | Shift Cmd E |
-| Expand/Collapse all areas (dans projets et areas) | Cmd + clic |
-| Expand single area, collapse others | Opt Cmd + clic |
+| Expand/Collapse all areas (in projects and areas) | Cmd + click |
+| Expand single area, collapse others | Opt Cmd + click |
 
-## Markdown (dans les notes)
+## Markdown (in notes)
 
-| Style | Syntaxe | Raccourci |
+| Style | Syntax | Shortcut |
 |-|-|-|
 | Heading 1 | `# ...` | Ctrl Cmd 1 |
-| Heading 2 | `## ...` | Ctrl Cmd 2 (et ainsi de suite pour la suite) |
+| Heading 2 | `## ...` | Ctrl Cmd 2 (and so on for the rest) |
 | Italics | `*...*` | Cmd I |
 | Bold | `**...**` | Cmd B |
 | Bulleted list | `- ...` | Shift Cmd L |
@@ -172,30 +172,30 @@ Type Travel : taper le nom de la liste ou du tag, puis Return `[VERIFIED]`.
 | Strikethrough | `~~...~~` | Opt Cmd U |
 | Code | `` `...` `` | Shift Cmd J |
 | Code block | ```` ```...``` ```` | Opt Shift Cmd J |
-| Increase indent (2 espaces) | | Cmd ] |
-| Decrease indent (2 espaces) | | Cmd [ |
+| Increase indent (2 spaces) | | Cmd ] |
+| Decrease indent (2 spaces) | | Cmd [ |
 
-D'autres syntaxes Markdown existent sans raccourci (Markdown Guide : https://culturedcode.com/things/support/articles/4651820/) `[VERIFIED]`.
+Other Markdown syntaxes exist without a shortcut (Markdown Guide: https://culturedcode.com/things/support/articles/4651820/) `[VERIFIED]`.
 
-## Raccourcis implicites vus ailleurs
+## Implicit shortcuts seen elsewhere
 
-| Action | Raccourci | Source |
+| Action | Shortcut | Source |
 |-|-|-|
-| Esc dans le main app | replie le to-do ouvert et enregistre | `[VERIFIED 2249437]` |
-| Esc dans Quick Entry | ferme et jette | `[VERIFIED 2249437]` |
-| Cmd Return dans Quick Entry | ferme et enregistre | `[VERIFIED 2249437]` |
+| Esc in the main app | folds the open to-do and saves | `[VERIFIED 2249437]` |
+| Esc in Quick Entry | closes and discards | `[VERIFIED 2249437]` |
+| Cmd Return in Quick Entry | closes and saves | `[VERIFIED 2249437]` |
 | Cmd , | Settings (standard macOS) | `[FROM-MEMORY]` |
 | Cmd Z / Shift Cmd Z | Undo / Redo (the Edit menu names the step) | `[FROM-MEMORY]`, implemented |
 | Delete, Backspace (no fn needed), Cmd Backspace | deletes the selected item at once, no confirmation, undo brings it back | `[FROM-MEMORY]`, implemented |
-| Opt + clic checkbox | cancel | `[VERIFIED 2785159]` |
+| Opt + click checkbox | cancel | `[VERIFIED 2785159]` |
 
-## Équivalents pour fork SwiftUI iOS clavier externe
+## Equivalents for the SwiftUI iOS fork with an external keyboard
 
-La page renvoie à une liste "iPhone, iPad & Vision" (onglet sur la même page, chargé par JavaScript, non lu ici) `[UNSURE]` : à ne pas supposer identique à Mac. Implémenter par défaut le sous-ensemble Mac ci-dessus avec `.keyboardShortcut` en iPadOS `[PROPOSAL]`.
+The page points to an "iPhone, iPad & Vision" list (tab on the same page, loaded by JavaScript, not read here) `[UNSURE]`: do not assume it is identical to Mac. Implement the Mac subset above by default with `.keyboardShortcut` on iPadOS `[PROPOSAL]`.
 
-## Récapitulatif [UNSURE]
+## Summary [UNSURE]
 
-Liste des raccourcis iPhone/iPad (onglet JS non lu) ; raccourcis Heading 3 à 6 (non listés, "...").
+List of the iPhone/iPad shortcuts (JS tab not read); Heading 3 to 6 shortcuts (not listed, "...").
 
 ## Fork status of the list keys (Mac)
 

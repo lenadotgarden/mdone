@@ -1,99 +1,99 @@
-# 02 - Écrans iPhone
+# 02 - iPhone screens
 
-Légende : `[VERIFIED url]` / `[FROM-MEMORY]` / `[UNSURE]`. Les wireframes sont indicatifs (proportions approximatives). Tokens visuels dans 01. Gestes détaillés dans 03. Règles métier dans 06.
+Legend: `[VERIFIED url]` / `[FROM-MEMORY]` / `[UNSURE]`. The wireframes are indicative (approximate proportions). Visual tokens in 01. Detailed gestures in 03. Business rules in 06.
 
-Plan de navigation iPhone `[FROM-MEMORY]` :
+iPhone navigation plan `[FROM-MEMORY]`:
 
 ```
 Home (main lists view)
  +- Inbox | Today | Upcoming | Anytime | Someday | Logbook
  +- Area -> Project
  +- Quick Find (pull-down)  +- Settings
-Liste -> to-do ouvert (carte en place, pas de push)
-Projet -> headings, to-dos
+List -> open to-do (card in place, no push)
+Project -> headings, to-dos
 ```
 
-## 1. Home (liste des listes)
+## 1. Home (list of lists)
 
-Sur iPhone la racine est la "main lists view" ; sur iPad/Vision/Duo c'est une sidebar `[VERIFIED https://culturedcode.com/things/support/articles/4001304/]` ("sidebar (Mac/iPad/iPhone Duo/Vision) and the main lists view (iPhone)").
+On iPhone the root is the "main lists view" ; on iPad/Vision/Duo it is a sidebar `[VERIFIED https://culturedcode.com/things/support/articles/4001304/]` ("sidebar (Mac/iPad/iPhone Duo/Vision) and the main lists view (iPhone)").
 
 ```
 +______________________________________+
-|                                      |   (pas de titre ; zone de pull-down = Quick Find)
-|  [tray]  Inbox                    3  |   blanc, compteur gris
-|                                      |   (espace vertical ~ 16 pt)
-|  [star]  Today                   12  |   compteur: nb de to-dos
+|                                      |   (no title ; pull-down area = Quick Find)
+|  [tray]  Inbox                    3  |   white, grey counter
+|                                      |   (vertical gap ~ 16 pt)
+|  [star]  Today                   12  |   counter: number of to-dos
 |  [cal ]  Upcoming                    |
 |  [stack] Anytime                     |
 |  [box ]  Someday                     |
 |                                      |
 |  [book]  Logbook                     |
 |                                      |
-|  [pie] Projet sans area              |   projets orphelins d'abord
-|  [pie] Autre projet                  |
+|  [pie] Project (no area)             |   projects without an area first
+|  [pie] Other project                 |
 |                                      |
-|  [area] Work                         |   Area en gras / grise
-|     [pie] Projet A                   |   projets nestés sous leur Area
-|     [pie] Projet B                   |
+|  [area] Work                         |   Area in bold / grey
+|     [pie] Project A                  |   projects nested under their Area
+|     [pie] Project B                  |
 |  [area] Home                         |
 |                                      |
-|  [+] New List                [gear]  |   barre basse : bouton gauche, Settings droite
+|  [+] New List                [gear]  |   bottom bar: button on the left, Settings on the right
 +______________________________________+
 ```
 
-- Ordre, regroupement : Inbox seule ; puis Today, Upcoming, Anytime, Someday ; puis Logbook ; puis projets sans area ; puis Areas avec leurs projets `[FROM-MEMORY]`. Les listes par défaut ne peuvent être ni renommées, ni supprimées, ni réordonnées `[VERIFIED https://culturedcode.com/things/support/articles/2803579/]`.
-- Les projets avec une date de début future ou dans Someday disparaissent de cette vue tant qu'ils sont inactifs `[VERIFIED 4001304]`.
-- Compteurs : Inbox (nombre d'items), Today (nombre ; en couleur si items en retard/deadline) `[FROM-MEMORY]`. Les autres listes n'ont pas de compteur `[UNSURE]`.
-- Tap sur une ligne : push de la liste (transition standard iOS, edge-swipe retour).
-- "New List" (en bas à gauche) : feuille avec choix New Project / New Area `[FROM-MEMORY]` ; "Magic Plus" glissé dans cette vue crée un projet directement dans une Area `[VERIFIED https://culturedcode.com/things/support/articles/2803582/]`.
-- Settings : icône engrenage en bas à droite `[UNSURE]` (position exacte).
-- Pull-down : révèle la barre de recherche Quick Find `[VERIFIED 2803582]`.
-- Edit mode : un long press sur une liste la soulève (drag) ; un swipe gauche sur un projet ou une area la sélectionne (barre d'actions en bas) `[VERIFIED 2803582]`.
-- Quand Today est vidé, la ligne Today garde l'icône étoile (grisée) `[UNSURE]`.
+- Order and grouping: Inbox alone ; then Today, Upcoming, Anytime, Someday ; then Logbook ; then projects without an area ; then Areas with their projects `[FROM-MEMORY]`. The default lists can be neither renamed, nor deleted, nor reordered `[VERIFIED https://culturedcode.com/things/support/articles/2803579/]`.
+- Projects with a future start date or in Someday disappear from this view as long as they are inactive `[VERIFIED 4001304]`.
+- Counters: Inbox (number of items), Today (number ; coloured when items are overdue/near deadline) `[FROM-MEMORY]`. The other lists have no counter `[UNSURE]`.
+- Tap on a row: pushes the list (standard iOS transition, edge-swipe back).
+- "New List" (bottom left): sheet offering New Project / New Area `[FROM-MEMORY]` ; "Magic Plus" dragged inside this view creates a project directly in an Area `[VERIFIED https://culturedcode.com/things/support/articles/2803582/]`.
+- Settings: gear icon at the bottom right `[UNSURE]` (exact position).
+- Pull-down: reveals the Quick Find search bar `[VERIFIED 2803582]`.
+- Edit mode: a long press on a list lifts it (drag) ; a left swipe on a project or an area selects it (action bar at the bottom) `[VERIFIED 2803582]`.
+- When Today is emptied, the Today row keeps its star icon (greyed out) `[UNSURE]`.
 
-## 2. Écran de liste générique (structure commune)
+## 2. Generic list screen (common structure)
 
 ```
 +______________________________________+
-| < Back                       [...]   |  nav bar transparente, '...' = menu de la liste
+| < Back                       [...]   |  transparent nav bar, '...' = list menu
 |                                      |
-|  [star] Today                        |  grand titre (34 pt bold) + icône
+|  [star] Today                        |  large title (34 pt bold) + icon
 |                                      |
-|  [ ] Acheter du pain      #errand    |  to-do row
-|  [ ] Appeler Kate                    |
-|  [ ] Rapport              flag 3 d   |
+|  [ ] Buy bread            #errand    |  to-do row
+|  [ ] Call Kate                       |
+|  [ ] Report              flag 3 d    |
 |                                      |
 |                              ( + )   |  Magic Plus
 +______________________________________+
 ```
 
-- Titre grand scrolle avec la liste ; quand on descend, le titre compact apparaît en barre supérieure ; le toucher fait apparaître le menu de navigation (Quick Find) `[VERIFIED 2803584]` ("When you're scrolled down in a list, tap the list name at the top").
-- Bouton "..." (More) en haut à droite : Share, Filter by Tag, etc. `[VERIFIED 2803581]` (Filter by Tag via "More") et `[VERIFIED 2803566]` (Share via "More"). Contenu exact du menu `[UNSURE]`.
-- Filter by tag : barre verte en haut quand le filtre est actif, bouton `x` pour effacer `[VERIFIED 2803581]`.
+- The large title scrolls with the list ; when you scroll down, the compact title appears in the top bar ; tapping it brings up the navigation menu (Quick Find) `[VERIFIED 2803584]` ("When you're scrolled down in a list, tap the list name at the top").
+- "..." (More) button at the top right: Share, Filter by Tag, etc. `[VERIFIED 2803581]` (Filter by Tag via "More") and `[VERIFIED 2803566]` (Share via "More"). Exact menu content `[UNSURE]`.
+- Filter by tag: green bar at the top when the filter is active, `x` button to clear it `[VERIFIED 2803581]`.
 
-### Ligne de to-do (état repos)
+### To-do row (resting state)
 
 ```
- [ ]  Titre du to-do                         
-      Aperçu de la note sur une ligne (gris, optionnel)
+ [ ]  To-do title
+      One-line note preview (grey, optional)
       [tag][tag]                 flag 5 days left
 ```
 
-- Checkbox à gauche. Titre 17 pt. Si le to-do a une note : petite icône note `[FROM-MEMORY]` ou ligne d'aperçu (une ligne max) `[UNSURE]`. Si checklist : indicateur "x/y" `[FROM-MEMORY]`.
-- Tags : pills grises à droite du titre ou sous lui `[FROM-MEMORY]`. Seuls les tags posés directement sont affichés, pas les hérités `[VERIFIED 2803581]`.
-- Deadline : drapeau + "N days left" / "Today" / "N days ago", rouge à partir de J `[FROM-MEMORY]` ; "The days remaining until the deadline will show next to the to-do and count down" `[VERIFIED 2803579]`.
-- Étoile jaune devant le to-do dans Anytime et projets quand il est dans Today `[VERIFIED 4001304]`.
-- Reminder : heure affichée (ex. "9:00") près du titre dans Today `[UNSURE]`.
-- Item complété : coche remplie, titre barré gris, reste visible brièvement puis part au Logbook `[FROM-MEMORY]`.
+- Checkbox on the left. Title 17 pt. If the to-do has a note: small note icon `[FROM-MEMORY]` or preview line (one line maximum) `[UNSURE]`. If it has a checklist: "x/y" indicator `[FROM-MEMORY]`.
+- Tags: grey pills to the right of the title or below it `[FROM-MEMORY]`. Only tags set directly are shown, not inherited ones `[VERIFIED 2803581]`.
+- Deadline: flag + "N days left" / "Today" / "N days ago", red from D-day onwards `[FROM-MEMORY]` ; "The days remaining until the deadline will show next to the to-do and count down" `[VERIFIED 2803579]`.
+- Yellow star in front of the to-do in Anytime and projects when it is in Today `[VERIFIED 4001304]`.
+- Reminder: time shown (e.g. "9:00") next to the title in Today `[UNSURE]`.
+- Completed item: filled check, title struck through in grey, stays visible briefly then goes to the Logbook `[FROM-MEMORY]`.
 
 ## 3. Inbox
 
-- Titre "Inbox" icône tray bleue.
-- Contenu : items non traités, ordre manuel, nouveaux en bas `[FROM-MEMORY]`.
-- Section temporaire en bas : "x to-dos were moved out of the Inbox", disparaît à l'entrée dans une autre liste `[VERIFIED 4001304]`.
-- Tout to-do déplacé dans une liste ou daté quitte l'Inbox `[VERIFIED 4001304]`.
-- Pas de ligne "Move to" spécifique ; Clear du When + Move vers "No Project" le renvoie en Anytime `[VERIFIED 2803579]` ("Anytime from the Inbox, use Move > No Project").
-- Texte d'état vide `[UNSURE]` (voir 06).
+- Title "Inbox", blue tray icon.
+- Content: unprocessed items, manual order, new ones at the bottom `[FROM-MEMORY]`.
+- Temporary section at the bottom: "x to-dos were moved out of the Inbox", disappears when you enter another list `[VERIFIED 4001304]`.
+- Any to-do moved into a list or given a date leaves the Inbox `[VERIFIED 4001304]`.
+- No specific "Move to" row ; clearing When + moving to "No Project" sends it back to Anytime `[VERIFIED 2803579]` ("Anytime from the Inbox, use Move > No Project").
+- Empty state text `[UNSURE]` (see 06).
 
 ## 4. Today
 
@@ -102,27 +102,27 @@ Sur iPhone la racine est la "main lists view" ; sur iPad/Vision/Duo c'est une si
 | <                            [...]   |
 |  [star] Today                        |
 |                                      |
-|  09:00  Réunion équipe        (cal)  |  section événements calendrier (si activée)
-|  14:00  Dentiste                     |
+|  09:00  Team meeting          (cal)  |  calendar events section (if enabled)
+|  14:00  Dentist                      |
 |  ____________________________________|
 |  [ ] To-do A                         |
 |  [ ] To-do B                         |
 |  [ ] To-do C           flag 1 day    |
 |                                      |
-|  [moon] This Evening                 |  en-tête de section
-|  [ ] Lire                            |
-|  [ ] Appeler maman                   |
+|  [moon] This Evening                 |  section header
+|  [ ] Read                            |
+|  [ ] Call mom                        |
 |                              ( + )   |
 +______________________________________+
 ```
 
-- "Think of it as a filter across the entire app": start date, deadline ou règle de répétition = aujourd'hui `[VERIFIED 4001304]`.
-- Section d'événements calendrier en tête si Settings > Calendar Events est activé, pour les calendriers choisis ; événements locaux en lecture seule, Apple Calendar seulement `[VERIFIED https://culturedcode.com/things/support/articles/2803583/]`.
-- This Evening : section en bas de Today avec sa propre icône/titre `[VERIFIED 4001304]`.
-- Réglage : grouper Today par projet/area (Settings > General) `[VERIFIED 4001304]` ("Enable this in Things > Settings > General").
-- Items avec deadline arrivée à échéance apparaissent aussi ici `[VERIFIED 4001304]`.
-- Ordre manuel par drag `[VERIFIED 4001304]` ("drag and drop to-dos into the order").
-- Reschedule rapide : swipe droit -> When `[VERIFIED 2803582]`.
+- "Think of it as a filter across the entire app": start date, deadline or repeat rule = today `[VERIFIED 4001304]`.
+- Calendar events section at the top if Settings > Calendar Events is enabled, for the chosen calendars ; local events are read-only, Apple Calendar only `[VERIFIED https://culturedcode.com/things/support/articles/2803583/]`.
+- This Evening: section at the bottom of Today with its own icon/title `[VERIFIED 4001304]`.
+- Setting: group Today by project/area (Settings > General) `[VERIFIED 4001304]` ("Enable this in Things > Settings > General").
+- Items whose deadline has arrived also appear here `[VERIFIED 4001304]`.
+- Manual order by drag `[VERIFIED 4001304]` ("drag and drop to-dos into the order").
+- Quick reschedule: right swipe -> When `[VERIFIED 2803582]`.
 
 ## 5. Upcoming
 
@@ -130,240 +130,240 @@ Sur iPhone la racine est la "main lists view" ; sur iPad/Vision/Duo c'est une si
 +______________________________________+
 |  [cal] Upcoming                      |
 |                                      |
-|  Tomorrow                            |  semaine à venir : 7 jours listés, à partir de demain
+|  Tomorrow                            |  coming week: 7 days listed, starting tomorrow
 |    [ ] To-do                         |
 |  Wed 18                              |
-|    (vide ou ligne d'en-tête seule)   |
+|    (empty or header row only)        |
 |  Thu 19                              |
 |  ...                                 |
-|  Next week / mois suivants           |  puis regroupement par semaines puis mois
+|  Next week / following months        |  then grouped by weeks then by months
 |  December                            |
-|    [ ] Planifié le 3                 |
+|    [ ] Scheduled on the 3rd          |
 +______________________________________+
 ```
 
 - "At the top of Upcoming, you'll see the next seven days listed separately, starting with tomorrow" `[VERIFIED 4001304]`.
-- Contient to-dos planifiés (start date future), répétitions à venir, deadlines, événements calendrier `[VERIFIED features]` ("scheduled to-dos, repeating to-dos, deadlines, and calendar events").
-- Reschedule par drag and drop sur un autre jour `[VERIFIED 4001304]`.
-- Au-delà de 7 jours : groupes par semaine puis par mois `[FROM-MEMORY]` `[UNSURE]` (granularité exacte).
-- Les projets avec date de début future y sont aussi listés `[VERIFIED 4001304]`.
-- Deadline : le to-do apparaît dans Upcoming au jour de sa deadline, avec drapeau `[VERIFIED 4001304]`.
+- Contains scheduled to-dos (future start date), upcoming repeats, deadlines, calendar events `[VERIFIED features]` ("scheduled to-dos, repeating to-dos, deadlines, and calendar events").
+- Reschedule by dragging and dropping onto another day `[VERIFIED 4001304]`.
+- Beyond 7 days: groups by week then by month `[FROM-MEMORY]` `[UNSURE]` (exact granularity).
+- Projects with a future start date are listed there too `[VERIFIED 4001304]`.
+- Deadline: the to-do appears in Upcoming on the day of its deadline, with a flag `[VERIFIED 4001304]`.
 
 ## 6. Anytime
 
-- Titre "Anytime" icône teal.
-- Ordre : to-dos libres (sans parent) en haut, puis groupés sous leur parent direct (projet ou area) ; une liste sans to-do actif n'apparaît pas `[VERIFIED 4001304]`.
-- Les to-dos de Today ont l'étoile jaune `[VERIFIED 4001304]`.
-- Contient aussi to-dos avec deadline (actifs) `[VERIFIED 4001304]`.
+- Title "Anytime", teal icon.
+- Order: loose to-dos (no parent) at the top, then grouped under their direct parent (project or area) ; a list without any active to-do does not appear `[VERIFIED 4001304]`.
+- To-dos from Today carry the yellow star `[VERIFIED 4001304]`.
+- Also contains to-dos with a deadline (active ones) `[VERIFIED 4001304]`.
 
 ## 7. Someday
 
-- Titre "Someday" icône boîte.
-- Contenu estompé (visuellement en retrait) `[VERIFIED 4001304]`.
-- Projets Someday cachés de Home et sidebar `[VERIFIED 4001304]`.
-- Mêmes regroupements que Anytime `[FROM-MEMORY]`.
+- Title "Someday", box icon.
+- Dimmed content (visually set back) `[VERIFIED 4001304]`.
+- Someday projects hidden from Home and the sidebar `[VERIFIED 4001304]`.
+- Same groupings as Anytime `[FROM-MEMORY]`.
 
 ## 8. Logbook
 
-- Titre "Logbook" icône livre/coche verte.
-- Groupes par période (Today, Yesterday, mois/années) `[FROM-MEMORY]` `[UNSURE]`.
-- Items complétés ou annulés (annulé = croix) `[VERIFIED 4001304]` ("completed or cancelled").
-- Conservation illimitée ; suppression en masse via sélection (Cmd A sur clavier externe ou multi-select) ; suppression iOS définitive `[VERIFIED 4001304]`.
-- Projets complétés listés aussi ; "Logged Projects" via Quick Find `[VERIFIED 2803584]`.
-- Auto-archive : "Move completed to Logbook" immédiat ou différé (Mac `Shift-Cmd-Y`) `[VERIFIED https://culturedcode.com/things/support/articles/2785159/]`.
+- Title "Logbook", green book/check icon.
+- Groups by period (Today, Yesterday, months/years) `[FROM-MEMORY]` `[UNSURE]`.
+- Completed or cancelled items (cancelled = cross) `[VERIFIED 4001304]` ("completed or cancelled").
+- Kept indefinitely ; bulk deletion via selection (Cmd A on an external keyboard or multi-select) ; deleting on iOS is permanent `[VERIFIED 4001304]`.
+- Completed projects are listed too ; "Logged Projects" via Quick Find `[VERIFIED 2803584]`.
+- Auto-archive: "Move completed to Logbook" immediately or deferred (Mac `Shift-Cmd-Y`) `[VERIFIED https://culturedcode.com/things/support/articles/2785159/]`.
 
 ## 9. Area view
 
 ```
 +______________________________________+
 | <                            [...]   |
-|  [area] Work                         |  titre bold + icône Area
-|  Notes de l'area (optionnel)         |  (zone texte Markdown)
+|  [area] Work                         |  bold title + Area icon
+|  Area notes (optional)               |  (Markdown text area)
 |  [tag]                               |
 |                                      |
-|  [ ] To-do libre de l'area           |  to-dos directement dans l'area
-|  [ ] Autre                           |
+|  [ ] Loose to-do of the area         |  to-dos directly in the area
+|  [ ] Other                           |
 |  ____                                |
-|  [pie] Project A      (n restants)   |  projets de l'area (pies)
+|  [pie] Project A      (n remaining)  |  projects of the area (pies)
 |  [pie] Project B                     |
 +______________________________________+
 ```
 
-- Une Area contient to-dos libres et projets `[FROM-MEMORY]`.
-- "More > Add Tags" pour tagguer l'area ; les items héritent du tag `[VERIFIED 2803581]`.
-- Pas de checkbox sur une Area (jamais "complétée") `[FROM-MEMORY]`.
-- Quand on glisse Magic Plus dans Home, un nouveau projet se crée dans l'Area `[VERIFIED 2803582]`.
-- Une Area déplacée entraîne ses projets `[VERIFIED 2803582]`.
+- An Area holds loose to-dos and projects `[FROM-MEMORY]`.
+- "More > Add Tags" to tag the area ; items inherit the tag `[VERIFIED 2803581]`.
+- No checkbox on an Area (never "completed") `[FROM-MEMORY]`.
+- When Magic Plus is dragged inside Home, a new project is created in the Area `[VERIFIED 2803582]`.
+- A moved Area takes its projects with it `[VERIFIED 2803582]`.
 
 ## 10. Project view
 
 ```
 +______________________________________+
 | <                            [...]   |
-|  [pie] Titre du projet               |  titre bold 28-34 pt, pie à gauche
-|  Notes du projet (Markdown)          |
+|  [pie] Project title                 |  bold title 28-34 pt, pie on the left
+|  Project notes (Markdown)            |
 |  [tag]  [flag deadline]  [when]      |
 |                                      |
-|  [ ] To-do sans heading              |
+|  [ ] To-do without heading           |
 |  [ ] To-do                           |
 |                                      |
-|  Heading 1  ________________________ |  heading : texte accent + ligne
-|  [ ] To-do sous heading              |
+|  Heading 1  ________________________ |  heading: accent text + line
+|  [ ] To-do under heading             |
 |  [ ] To-do                           |
 |                                      |
 |  Heading 2  ________________________ |
 |  [ ] ...                             |
 |                                      |
-|  (to-dos complétés : lien "x completed"?)  [UNSURE]
+|  (completed to-dos: "x completed" link?)  [UNSURE]
 +______________________________________+
 ```
 
-- Header : pie de progression + titre ; notes ; deadline/when ; tags. `[FROM-MEMORY]`.
-- Menu "..." du projet : Add Tags, Repeat, Share, Move?, Complete Project, Delete `[VERIFIED 2803564]` (Repeat), `[VERIFIED 2803581]` (Add Tags), `[VERIFIED 2803566]` (Share) ; le reste `[UNSURE]`.
-- Headings : rangent les to-dos ; archivables avec leur contenu ; glissables avec leur groupe `[VERIFIED features]` ("archive your heading and all of its to-dos"). Un heading a son propre menu (Archive, Move, Delete...) `[FROM-MEMORY]`.
-- Dans un projet, les to-dos inactifs (start date future) sont placés sous les actifs `[VERIFIED 4001304]`.
-- Un to-do du projet qui est dans Today a l'étoile `[VERIFIED 4001304]`.
-- Création d'un heading : glisser le Magic Plus à l'extrême gauche de l'écran `[VERIFIED 2803582]`.
-- Complétion d'un projet : voir 06.
-- Projet avec deadline : drapeau et jours restants à droite du titre `[FROM-MEMORY]`.
+- Header: progress pie + title ; notes ; deadline/when ; tags. `[FROM-MEMORY]`.
+- Project "..." menu: Add Tags, Repeat, Share, Move?, Complete Project, Delete `[VERIFIED 2803564]` (Repeat), `[VERIFIED 2803581]` (Add Tags), `[VERIFIED 2803566]` (Share) ; the rest `[UNSURE]`.
+- Headings: group the to-dos ; can be archived with their content ; draggable with their group `[VERIFIED features]` ("archive your heading and all of its to-dos"). A heading has its own menu (Archive, Move, Delete...) `[FROM-MEMORY]`.
+- Inside a project, inactive to-dos (future start date) are placed below the active ones `[VERIFIED 4001304]`.
+- A project to-do that is in Today carries the star `[VERIFIED 4001304]`.
+- Creating a heading: drag Magic Plus to the far left edge of the screen `[VERIFIED 2803582]`.
+- Completing a project: see 06.
+- Project with a deadline: flag and remaining days to the right of the title `[FROM-MEMORY]`.
 
-## 11. To-do inline editor / to-do ouvert
+## 11. Inline to-do editor / open to-do
 
-Un tap sur un to-do l'ouvre en place : carte blanche avec ombre, le clavier apparaît pour le titre `[VERIFIED features]`.
+A tap on a to-do opens it in place: white card with a shadow, the keyboard appears for the title `[VERIFIED features]`.
 
 ```
 +______________________________________+
 |  +__________________________________+|
-|  | [ ] Titre du to-do               ||  champ titre, 17 pt
-|  |     Notes                        ||  zone note (Markdown), placeholder "Notes"
+|  | [ ] To-do title                   ||  title field, 17 pt
+|  |     Notes                        ||  note area (Markdown), placeholder "Notes"
 |  |                                  ||
-|  |     [ ] Item de checklist   ===  ||  grip à droite pour réordonner
-|  |     [ ] Autre item          ===  ||
+|  |     [ ] Checklist item    ===    ||  grip on the right to reorder
+|  |     [ ] Other item        ===    ||
 |  |                                  ||
-|  |  [tag] [tag]                     ||  pills des tags
-|  |  [star] Today          flag 5 d  ||  When à gauche, Deadline à droite
+|  |  [tag] [tag]                     ||  tag pills
+|  |  [star] Today          flag 5 d  ||  When on the left, Deadline on the right
 |  |                                  ||
-|  |  (cal) (tag) (list) (flag)  ...  ||  barre d'icônes : When, Tags, Checklist, Deadline, "..."
+|  |  (cal) (tag) (list) (flag)  ...  ||  icon bar: When, Tags, Checklist, Deadline, "..."
 |  +__________________________________+|
 +______________________________________+
-|  clavier iOS                    (v)  |  bouton pour fermer le clavier
+|  iOS keyboard                  (v)   |  button to dismiss the keyboard
 +______________________________________+
 ```
 
-Détails `[FROM-MEMORY]` sauf mention :
+Details `[FROM-MEMORY]` unless stated:
 
-- Les champs vides sont "rangés dans un coin" : seule la rangée d'icônes (When/calendar, Tags, Checklist, Deadline/flag) est visible en bas de la carte tant qu'ils ne sont pas remplis `[VERIFIED features]`.
-- Champs : Title, Notes, Tags, When, Deadline, Checklist, plus menu "..." (More) en bas à droite avec : Repeat, Move, Share, Find in Text, Manage Tags, Duplicate, Delete `[VERIFIED 2803564]` (More > Repeat), `[VERIFIED 4438545]` ("..." > Find in Text), `[VERIFIED 2803581]` (Manage Tags), `[VERIFIED 2803566]` (More > Share). Ordre `[UNSURE]`.
-- Bouton en haut à droite pour fermer le clavier `[VERIFIED 2803564]` ("Tap the button in the upper right to dismiss the keyboard").
-- Barre du bas : More à gauche ? Les articles disent "More > Repeat at the bottom of your screen" `[VERIFIED 2803564]` donc More est en barre du bas.
-- Format dans les notes : appui dans la zone note -> popover "Format" avec styles Markdown, ">" pour plus d'options `[VERIFIED 4438545]`.
-- Les notes acceptent Markdown : `**gras**`, `*italique*`, `::surbrillance::`, titres `#`, listes `-`, `1.`, `- [ ]` tâches, liens `[...]()`, code `` ` `` `[VERIFIED 2785159]`. Les liens sont affichés dans leur forme complète `[VERIFIED 4438545]`.
-- Pas d'image/pièce jointe `[VERIFIED 4438545]`.
-- Checklist : tap sur le cercle = complète ; swipe gauche = supprime ; grip à droite (trois barres) = réordonne en long press `[VERIFIED 2803582]`. Coller une liste à puces la convertit en checklist `[VERIFIED features]`. Mac : `Shift-Cmd-C` nouvelle checklist `[VERIFIED 2785159]`.
-- Repeat dans "More" ; à l'ouverture d'un template : flèche bleue `[VERIFIED 2803564]`.
-- Un copy d'un répétitif affiche "This is a copy of a repeating to-do" cliquable vers le template `[VERIFIED 2803564]`.
-- Fermeture : tap hors carte ou bouton Done ; sauvegarde automatique `[FROM-MEMORY]`.
-- Création : le tout nouveau to-do s'ouvre directement en édition avec clavier `[FROM-MEMORY]`.
-- Dans l'Inbox via Magic Plus, le Quick Entry popover permet de choisir une autre liste en tapant "Inbox" `[VERIFIED 2803582]` ("Tap Inbox in the Quick Entry popover to file your to-do in another list").
+- Empty fields are "tucked into a corner": only the icon row (When/calendar, Tags, Checklist, Deadline/flag) is visible at the bottom of the card as long as they are unfilled `[VERIFIED features]`.
+- Fields: Title, Notes, Tags, When, Deadline, Checklist, plus a "..." (More) menu at the bottom right with: Repeat, Move, Share, Find in Text, Manage Tags, Duplicate, Delete `[VERIFIED 2803564]` (More > Repeat), `[VERIFIED 4438545]` ("..." > Find in Text), `[VERIFIED 2803581]` (Manage Tags), `[VERIFIED 2803566]` (More > Share). Order `[UNSURE]`.
+- Button at the top right to dismiss the keyboard `[VERIFIED 2803564]` ("Tap the button in the upper right to dismiss the keyboard").
+- Bottom bar: More on the left? The articles say "More > Repeat at the bottom of your screen" `[VERIFIED 2803564]` so More sits in the bottom bar.
+- Formatting in notes: press inside the note area -> "Format" popover with Markdown styles, ">" for more options `[VERIFIED 4438545]`.
+- Notes accept Markdown: `**bold**`, `*italic*`, `::highlight::`, `#` headings, `-` lists, `1.`, `- [ ]` tasks, `[...]()` links, `` ` `` code `[VERIFIED 2785159]`. Links are displayed in their full form `[VERIFIED 4438545]`.
+- No images/attachments `[VERIFIED 4438545]`.
+- Checklist: tap on the circle = complete ; left swipe = delete ; grip on the right (three bars) = reorder via long press `[VERIFIED 2803582]`. Pasting a bulleted list converts it into a checklist `[VERIFIED features]`. Mac: `Shift-Cmd-C` new checklist `[VERIFIED 2785159]`.
+- Repeat lives in "More" ; when a template is opened: blue arrow `[VERIFIED 2803564]`.
+- A copy of a repeating to-do displays "This is a copy of a repeating to-do", tappable through to the template `[VERIFIED 2803564]`.
+- Closing: tap outside the card or the Done button ; automatic save `[FROM-MEMORY]`.
+- Creation: a brand new to-do opens straight away in edit mode with the keyboard `[FROM-MEMORY]`.
+- In the Inbox via Magic Plus, the Quick Entry popover lets you pick another list by tapping "Inbox" `[VERIFIED 2803582]` ("Tap Inbox in the Quick Entry popover to file your to-do in another list").
 
 ## 12. When picker (Jump Start)
 
-Ouvert via l'icône calendrier du to-do, un tap sur la date affichée, un swipe droit sur la ligne, ou `Cmd-S` clavier `[VERIFIED 2803579]`. Sur iPhone : feuille du bas (popover compact) `[FROM-MEMORY]`.
+Opened via the to-do's calendar icon, a tap on the displayed date, a right swipe on the row, or the `Cmd-S` shortcut `[VERIFIED 2803579]`. On iPhone: sheet from the bottom (compact popover) `[FROM-MEMORY]`.
 
 ```
 +______________________________________+
-|  (pull-down : champ texte NL)        |  "Pull down in the date picker to type"  [VERIFIED 2803582]
+|  (pull-down: NL text field)          |  "Pull down in the date picker to type"  [VERIFIED 2803582]
 |                                      |
 |  [star]  Today                       |
 |  [moon]  This Evening                |
 |  [box]   Someday                     |
 |                                      |
-|  < Novembre 2026 >                   |  grille calendrier mensuelle
-|  L  M  M  J  V  S  D                 |  (semaine commence selon région)
-|  ..  ..  16 17 18 ..                 |  aujourd'hui entouré/étoile
+|  < November 2026 >                   |  monthly calendar grid
+|  M  T  W  T  F  S  S                 |  (week starts by region)
+|  ..  ..  16 17 18 ..                 |  today circled/starred
 |                                      |
-|  [+] Add Reminder                    |  -> time picker (barrel) puis Set
+|  [+] Add Reminder                    |  -> time picker (barrel) then Set
 |  [x] Clear                           |
 +______________________________________+
 ```
 
-- Options : Today, This Evening, Someday ; clic sur date de la grille = Upcoming ; Clear = enlève toute planification et met en Anytime `[VERIFIED 2803579]`.
-- Add Reminder : "Tap -> + Add Reminder, set a reminder time from the time picker, tap Set -> Done" `[VERIFIED https://culturedcode.com/things/support/articles/2803585/]`. Le sélecteur d'heure est un "barrel" (roue) `[VERIFIED features]`.
-- Natural language : pull-down dans le picker pour taper ("tues 8am") puis touche Return bleue `[VERIFIED https://culturedcode.com/things/support/articles/9780167/]`. Exemples dans 06.
-- Snooze de notification : 15 min, 1 h, 3 h, jusqu'au lendemain `[VERIFIED 2803585]`.
-- Plus de contenu : après sélection la popover se ferme (l'article dit qu'elle peut se refermer quand on pose date + reminder, d'où l'usage du NL) `[VERIFIED 2803585]`.
+- Options: Today, This Evening, Someday ; clicking a date in the grid = Upcoming ; Clear = removes all scheduling and puts it in Anytime `[VERIFIED 2803579]`.
+- Add Reminder: "Tap -> + Add Reminder, set a reminder time from the time picker, tap Set -> Done" `[VERIFIED https://culturedcode.com/things/support/articles/2803585/]`. The time picker is a "barrel" (wheel) `[VERIFIED features]`.
+- Natural language: pull down inside the picker to type ("tues 8am") then the blue Return key `[VERIFIED https://culturedcode.com/things/support/articles/9780167/]`. Examples in 06.
+- Notification snooze: 15 min, 1 h, 3 h, until the next day `[VERIFIED 2803585]`.
+- More content: after a selection the popover closes (the article says it can close as soon as a date + reminder is set, hence the use of NL) `[VERIFIED 2803585]`.
 
 ## 13. Deadline picker
 
-- Bouton drapeau dans la carte ouverte. Popover calendrier avec bouton Clear `[VERIFIED 2803579]`.
-- Pas de reminder pour une deadline `[VERIFIED 2803585]`.
-- NL dans le picker Deadline iPhone nécessite un clavier matériel `[VERIFIED 9780167]` (limite d'origine ; à ne pas reproduire forcément `[PROPOSAL]`).
+- Flag button inside the open card. Calendar popover with a Clear button `[VERIFIED 2803579]`.
+- No reminder for a deadline `[VERIFIED 2803585]`.
+- NL inside the iPhone Deadline picker requires a hardware keyboard `[VERIFIED 9780167]` (original limitation ; not necessarily something to reproduce `[PROPOSAL]`).
 
 ## 14. Tag picker
 
-- Popover/feuille avec liste des tags (cases à cocher), "New Tag" en tête, bouton Done `[VERIFIED 2803581]`.
-- Pull-down pour chercher un tag `[VERIFIED 2803582]`.
-- "Manage Tags" : créer, supprimer, renommer, grouper (bouton bleu à droite du tag > Group), réordonner par long press `[VERIFIED 2803581]`.
-- Multi-select : barre du bas More > Set Tags `[VERIFIED 2803581]`.
-- Tags héritables depuis liste `[VERIFIED 2803581]`.
+- Popover/sheet with the list of tags (checkboxes), "New Tag" at the top, Done button `[VERIFIED 2803581]`.
+- Pull-down to search for a tag `[VERIFIED 2803582]`.
+- "Manage Tags": create, delete, rename, group (blue button to the right of the tag > Group), reorder via long press `[VERIFIED 2803581]`.
+- Multi-select: bottom bar More > Set Tags `[VERIFIED 2803581]`.
+- Tags inheritable from a list `[VERIFIED 2803581]`.
 
 ## 15. Move sheet
 
-- Ouverte par More > Move (to-do/liste sélectionnée) `[FROM-MEMORY]`.
-- Barre de recherche en tête (filtre tapé) `[VERIFIED features]` ("Quick Move ... Type to filter down the list").
-- Liste : Inbox, Areas et projets (nesting visuel), option "No Project" / "No Area"... `[VERIFIED 2803579]` ("Move > No Project").
-- Peut aussi cibler un heading dans un projet `[FROM-MEMORY]` ; Mac Move dialog permet d'ajouter dans projets inactifs `[VERIFIED 4001304]`.
+- Opened by More > Move (selected to-do/list) `[FROM-MEMORY]`.
+- Search bar at the top (filters as you type) `[VERIFIED features]` ("Quick Move ... Type to filter down the list").
+- List: Inbox, Areas and projects (visual nesting), option "No Project" / "No Area"... `[VERIFIED 2803579]` ("Move > No Project").
+- Can also target a heading inside a project `[FROM-MEMORY]` ; the Mac Move dialog lets you add to inactive projects `[VERIFIED 4001304]`.
 
 ## 16. Quick Find (search)
 
-- Déclenchée par pull-down sur une liste `[VERIFIED 2803584]`. Sur iPad/Duo toujours en haut de la sidebar.
-- Premier niveau : noms de to-dos, projets, areas, tags, listes par défaut, headings `[VERIFIED 2803582]`.
-- "Continue Search" en bas étend à notes, checklists, Logbook `[VERIFIED 2803584]`.
-- Navigation : taper le nom d'une liste (ex. "tod") puis choisir pour y aller ; fonctionne aussi pour listes spéciales : Tomorrow, Deadlines, Repeating, All Projects, Logged Projects `[VERIFIED 2803584]`.
-- Taper un tag donne un filtre app-wide `[VERIFIED features]`.
-- Une résultat = ligne avec icône et titre ; tap = aller à l'élément `[FROM-MEMORY]`.
+- Triggered by pulling down on a list `[VERIFIED 2803584]`. On iPad/Duo always at the top of the sidebar.
+- First level: names of to-dos, projects, areas, tags, default lists, headings `[VERIFIED 2803582]`.
+- "Continue Search" at the bottom extends to notes, checklists, Logbook `[VERIFIED 2803584]`.
+- Navigation: type the name of a list (e.g. "tod") then pick it to go there ; also works for special lists: Tomorrow, Deadlines, Repeating, All Projects, Logged Projects `[VERIFIED 2803584]`.
+- Typing a tag gives an app-wide filter `[VERIFIED features]`.
+- One result = a row with an icon and a title ; tap = go to the item `[FROM-MEMORY]`.
 
 ## 17. Settings
 
-Écran accessible depuis Home. Entrées `[FROM-MEMORY]` sauf mention :
+Screen reachable from Home. Entries `[FROM-MEMORY]` unless stated:
 
-- Things Cloud (compte, sync) `[VERIFIED https://culturedcode.com/things/support/articles/2803586/]` (service de sync).
-- General : Group Today by project/area `[VERIFIED 4001304]`, badge count, "Add new to-dos to the top/bottom" `[UNSURE]`.
-- Appearance : thème Light/Dark/Black, taille du texte Custom `[VERIFIED 8537373]`, widgets appearance `[VERIFIED 2803567]`.
-- Calendar Events : interrupteur Show Calendar Events, liste de calendriers, bouton Close en haut à droite `[VERIFIED 2803583]`.
+- Things Cloud (account, sync) `[VERIFIED https://culturedcode.com/things/support/articles/2803586/]` (sync service).
+- General: Group Today by project/area `[VERIFIED 4001304]`, badge count, "Add new to-dos to the top/bottom" `[UNSURE]`.
+- Appearance: Light/Dark/Black theme, Custom text size `[VERIFIED 8537373]`, widget appearance `[VERIFIED 2803567]`.
+- Calendar Events: Show Calendar Events switch, list of calendars, Close button at the top right `[VERIFIED 2803583]`.
 - Notifications / Reminders, Siri AI (beta) `[VERIFIED https://culturedcode.com/things/support/articles/2877019/]`.
 - Mail to Things, Shortcuts, About / Help `[FROM-MEMORY]`.
-- Taper "Settings" dans Quick Find y mène `[VERIFIED 2803584]` ("Access Settings ... by typing their name").
+- Typing "Settings" in Quick Find leads there `[VERIFIED 2803584]` ("Access Settings ... by typing their name").
 
 ## 18. Magic Plus
 
-- Bouton `+` bleu, en bas à droite de chaque liste `[FROM-MEMORY]`.
-- Tap : nouveau to-do en haut/bas de la liste courante (selon réglage `[UNSURE]`), mode édition ; dans Today -> start date Today ; dans Upcoming -> jour ; dans Inbox -> Inbox ; dans un projet -> dans le projet `[FROM-MEMORY]`.
-- Drag : "Drag the Magic Plus Button anywhere ... your new to-do will be inserted where you drop it" `[VERIFIED 2803582]` ; dans Today à l'endroit voulu, sous un heading, dans le bon jour d'Upcoming `[VERIFIED features]`.
-- Drag vers cible Inbox en bas à gauche : crée dans l'Inbox quelle que soit la liste `[VERIFIED 2803582]`.
-- Drag vers le bord gauche dans un projet : crée un heading à l'endroit `[VERIFIED 2803582]`.
-- Drag dans Home : crée un projet dans l'Area sur laquelle on dépose `[VERIFIED 2803582]`.
-- Long press prolongé -> même effet que drag `[UNSURE]`.
-- Dans une liste filtrée par tag, le nouveau to-do reçoit le tag `[UNSURE]`.
+- Blue `+` button, at the bottom right of every list `[FROM-MEMORY]`.
+- Tap: new to-do at the top/bottom of the current list (depending on the setting `[UNSURE]`), in edit mode ; inside Today -> start date Today ; inside Upcoming -> that day ; inside Inbox -> Inbox ; inside a project -> in the project `[FROM-MEMORY]`.
+- Drag: "Drag the Magic Plus Button anywhere ... your new to-do will be inserted where you drop it" `[VERIFIED 2803582]` ; inside Today at the desired spot, under a heading, in the right day of Upcoming `[VERIFIED features]`.
+- Drag towards the Inbox target at the bottom left: creates it in the Inbox whatever the current list `[VERIFIED 2803582]`.
+- Drag towards the left edge inside a project: creates a heading at that spot `[VERIFIED 2803582]`.
+- Drag inside Home: creates a project in the Area you drop on `[VERIFIED 2803582]`.
+- Extended long press -> same effect as drag `[UNSURE]`.
+- In a list filtered by tag, the new to-do receives the tag `[UNSURE]`.
 
-## 19. Mode multi-sélection
+## 19. Multi-select mode
 
-- Entrée : swipe gauche sur un to-do (le sélectionne), ou tap sur d'autres. "swiping a to-do not only shows you the actions you can perform, but it also immediately enters multi-select mode" `[VERIFIED features]`.
-- Cercles de sélection à droite ; glisser le doigt le long du bord droit sélectionne un groupe `[VERIFIED 2803582]`.
-- Barre du bas : actions (When, Move, Tags (More > Set Tags), Duplicate, Delete...) `[VERIFIED 2803581]` (More > Set Tags) ; liste exacte `[UNSURE]`.
-- Long press sur un sélectionné : drag de toute la sélection `[VERIFIED 2803582]`.
-- Sélection d'Areas/projets : swipe gauche sur un projet ou une area `[VERIFIED 2803582]`.
-- Sortie : bouton Done ou tap vide `[UNSURE]`.
+- Entry: left swipe on a to-do (selects it), or tap on others. "swiping a to-do not only shows you the actions you can perform, but it also immediately enters multi-select mode" `[VERIFIED features]`.
+- Selection circles on the right ; dragging your finger along the right edge selects a group `[VERIFIED 2803582]`.
+- Bottom bar: actions (When, Move, Tags (More > Set Tags), Duplicate, Delete...) `[VERIFIED 2803581]` (More > Set Tags) ; exact list `[UNSURE]`.
+- Long press on a selected item: drags the whole selection `[VERIFIED 2803582]`.
+- Selecting Areas/projects: left swipe on a project or an area `[VERIFIED 2803582]`.
+- Exit: Done button or empty tap `[UNSURE]`.
 
-## 20. Share extension / ajout depuis d'autres apps
+## 20. Share extension / adding from other apps
 
-- Share sheet iOS : "Add to Things" (extension) ; crée un to-do avec titre, notes (URL) et choix de la liste ; Quick Entry style popover `[FROM-MEMORY]`.
-- Partage sortant : More > Share sur to-do ou liste, texte brut ; notes/tags des enfants non inclus `[VERIFIED https://culturedcode.com/things/support/articles/2803566/]`.
-- Mail to Things (adresse personnelle) `[VERIFIED https://culturedcode.com/things/support/articles/1059358/]` (existence).
-- Siri / Shortcuts / URL scheme : voir sources `[VERIFIED 2877019]`.
-- Widgets : Home/Lock Screen (Today, Upcoming, listes perso, tags), bouton + vers Inbox, case à cocher interactive `[VERIFIED 2803567]`.
-- Apple Watch : Today uniquement, avec checklists et headings `[VERIFIED https://culturedcode.com/things/support/articles/2157909/]`.
+- iOS share sheet: "Add to Things" (extension) ; creates a to-do with a title, notes (URL) and a list choice ; Quick Entry style popover `[FROM-MEMORY]`.
+- Outgoing share: More > Share on a to-do or list, plain text ; children's notes/tags not included `[VERIFIED https://culturedcode.com/things/support/articles/2803566/]`.
+- Mail to Things (personal address) `[VERIFIED https://culturedcode.com/things/support/articles/1059358/]` (existence).
+- Siri / Shortcuts / URL scheme: see sources `[VERIFIED 2877019]`.
+- Widgets: Home/Lock Screen (Today, Upcoming, custom lists, tags), + button to the Inbox, interactive checkbox `[VERIFIED 2803567]`.
+- Apple Watch: Today only, with checklists and headings `[VERIFIED https://culturedcode.com/things/support/articles/2157909/]`.
 
-## Récapitulatif [UNSURE]
+## Recap of [UNSURE]
 
-Position bouton Settings ; compteurs Home ; contenu exact des menus "..." (liste, projet, to-do) ; barre d'actions multi-select ; regroupement de Logbook et d'Upcoming après 7 jours ; position (haut/bas) des nouveaux to-dos ; tags sur Magic Plus dans liste filtrée ; icône notes sur ligne ; sortie du mode multi-select.
+Settings button position ; Home counters ; exact content of the "..." menus (list, project, to-do) ; multi-select action bar ; Logbook and Upcoming grouping beyond 7 days ; position (top/bottom) of new to-dos ; tags on Magic Plus inside a filtered list ; notes icon on the row ; exiting multi-select mode.

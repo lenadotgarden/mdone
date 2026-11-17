@@ -1,12 +1,12 @@
-# 04 - Écrans macOS
+# 04 - macOS screens
 
-Légende `[VERIFIED url]` / `[FROM-MEMORY]` / `[UNSURE]`. Les raccourcis complets sont dans 05. Tokens dans 01.
+Legend `[VERIFIED url]` / `[FROM-MEMORY]` / `[UNSURE]`. The full shortcut list is in 05. Tokens in 01.
 
-## 1. Fenêtre principale
+## 1. Main window
 
 ```
 +________________________________________________________________+
-| (o)(o)(o)   [<][>]   Today                     [ + ] [search]  |  barre de titre / toolbar
+| (o)(o)(o)   [<][>]   Today                     [ + ] [search]  |  title bar / toolbar
 +________________________+_______________________________________+
 | Inbox              3   |  [star] Today                         |
 |                        |                                       |
@@ -17,64 +17,64 @@ Légende `[VERIFIED url]` / `[FROM-MEMORY]` / `[UNSURE]`. Les raccourcis complet
 |                        |  [moon] This Evening                  |
 | [book] Logbook         |  [ ] To-do D                          |
 |                        |                                       |
-| [pie] Projet libre     |                                       |
+| [pie] Loose project    |                                       |
 | v [area] Work          |                                       |
-|    [pie] Projet A      |                                       |
-|    [pie] Projet B      |                                       |
+|    [pie] Project A     |                                       |
+|    [pie] Project B     |                                       |
 | > [area] Home          |                                       |
 |                        |                                       |
-| [+ New List]           |                           [ + ]       |  pied de fenêtre
+| [+ New List]           |                           [ + ]       |  window footer
 +________________________+_______________________________________+
 ```
 
-- Sidebar : Inbox, Today, Upcoming, Anytime, Someday, Logbook, (Trash si non vide), puis projets libres, puis Areas avec projets repliables `[FROM-MEMORY]`. "The sidebar neatly groups projects underneath their area" `[VERIFIED https://culturedcode.com/things/features/]`.
-- Compteurs à droite des lignes ; Today et Inbox au minimum `[FROM-MEMORY]`.
-- Sidebar masquable : `Cmd-/` ; en mode "Slim", titre de liste cliquable pour naviguer `[VERIFIED https://culturedcode.com/things/features/]` + `[VERIFIED https://culturedcode.com/things/support/articles/2785159/]` (`Cmd-/`, `Shift-Cmd-O` popover de navigation).
-- Barre d'outils masquable `Opt-Cmd-T` `[VERIFIED 2785159]`.
-- Fenêtres multiples : `Ctrl-Cmd-N` nouvelle fenêtre ; Cmd-clic pour ouvrir une liste/projet/area en nouvelle fenêtre ; Opt + bouton New Window ouvre la même liste `[VERIFIED 2785159]`. Drag de to-dos entre fenêtres `[VERIFIED features]`.
-- Expand/Collapse toutes les Areas : Cmd-clic sur un chevron ; une seule Area ouverte : Opt-Cmd-clic `[VERIFIED 2785159]`.
-- Toolbar : boutons précédent/suivant, bouton + (nouveau to-do), bouton de partage, recherche (apparaît en tapant : Type Travel) `[FROM-MEMORY]` ; "New Window button is in the upper-right corner" `[VERIFIED 2785159]`.
-- Pas de panneau inspecteur permanent : le détail s'ouvre en place dans la liste (carte) `[FROM-MEMORY]`. Il n'y a donc pas de 3e colonne, contrairement à d'autres apps ; ne pas en créer `[FROM-MEMORY]`.
+- Sidebar: Inbox, Today, Upcoming, Anytime, Someday, Logbook, (Trash if not empty), then loose projects, then Areas with collapsible projects `[FROM-MEMORY]`. "The sidebar neatly groups projects underneath their area" `[VERIFIED https://culturedcode.com/things/features/]`.
+- Counters to the right of the rows ; Today and Inbox at the very least `[FROM-MEMORY]`.
+- Sidebar can be hidden: `Cmd-/` ; in "Slim" mode, the list title is clickable for navigation `[VERIFIED https://culturedcode.com/things/features/]` + `[VERIFIED https://culturedcode.com/things/support/articles/2785159/]` (`Cmd-/`, `Shift-Cmd-O` navigation popover).
+- Toolbar can be hidden with `Opt-Cmd-T` `[VERIFIED 2785159]`.
+- Multiple windows: `Ctrl-Cmd-N` new window ; Cmd-click to open a list/project/area in a new window ; Opt + New Window button opens the same list `[VERIFIED 2785159]`. Dragging to-dos between windows `[VERIFIED features]`.
+- Expand/Collapse all Areas: Cmd-click on a chevron ; a single Area: Opt-Cmd-click `[VERIFIED 2785159]`.
+- Toolbar: back/forward buttons, + button (new to-do), share button, search (appears as you type: Type Travel) `[FROM-MEMORY]` ; "New Window button is in the upper-right corner" `[VERIFIED 2785159]`.
+- No permanent inspector pane: details open in place inside the list (card) `[FROM-MEMORY]`. There is therefore no third column, unlike other apps ; do not create one `[FROM-MEMORY]`.
 
-## 2. Listes (mêmes règles que iOS, voir 02/06)
+## 2. Lists (same rules as iOS, see 02/06)
 
-| Liste | Spécificités Mac `[FROM-MEMORY]` sauf mention |
+| List | Mac specifics `[FROM-MEMORY]` unless stated |
 |-|-|
-| Inbox | idem iOS ; "x to-dos were moved out of the Inbox" `[VERIFIED 4001304]` |
-| Today | événements calendrier en tête `[VERIFIED 2803583]` ; This Evening en section ; Settings > General pour grouper par projet/area `[VERIFIED 4001304]` |
-| Upcoming | 7 jours séparés à partir de demain `[VERIFIED 4001304]` ; drag-drop pour reschedule `[VERIFIED 4001304]` ; événements calendrier aussi `[VERIFIED 2803583]` |
-| Anytime | `[VERIFIED 4001304]` comme iOS |
-| Someday | contenu estompé `[VERIFIED 4001304]` |
-| Logbook | `Shift-Cmd-Y` pour "Move completed to Logbook" `[VERIFIED 2785159]` ; Trash pour suppression définitive (vider la corbeille) `[VERIFIED 4001304]` |
-| Area / Project | notes, tags, headings, progression ; "More" à côté du titre : Add Tags, Repeat, Share `[VERIFIED 2803581]` `[VERIFIED 2803564]` `[VERIFIED 2803566]` |
-| Listes spéciales | View > Go To : Tomorrow, Deadlines, Repeating, All Projects, Logged Projects `[VERIFIED 2803584]` |
-| Filter bar | barre de tags en haut de liste ; clic = filtre, bouton "All" = efface, Cmd-clic = multi-tag (ET) `[VERIFIED 2803581]` ; `Ctrl-Esc` quitte le filtre `[VERIFIED 2785159]` |
+| Inbox | same as iOS ; "x to-dos were moved out of the Inbox" `[VERIFIED 4001304]` |
+| Today | calendar events at the top `[VERIFIED 2803583]` ; This Evening as a section ; Settings > General to group by project/area `[VERIFIED 4001304]` |
+| Upcoming | 7 separate days starting tomorrow `[VERIFIED 4001304]` ; drag and drop to reschedule `[VERIFIED 4001304]` ; calendar events too `[VERIFIED 2803583]` |
+| Anytime | `[VERIFIED 4001304]` as on iOS |
+| Someday | dimmed content `[VERIFIED 4001304]` |
+| Logbook | `Shift-Cmd-Y` for "Move completed to Logbook" `[VERIFIED 2785159]` ; Trash for permanent deletion (empty the bin) `[VERIFIED 4001304]` |
+| Area / Project | notes, tags, headings, progress ; "More" next to the title: Add Tags, Repeat, Share `[VERIFIED 2803581]` `[VERIFIED 2803564]` `[VERIFIED 2803566]` |
+| Special lists | View > Go To: Tomorrow, Deadlines, Repeating, All Projects, Logged Projects `[VERIFIED 2803584]` |
+| Filter bar | tag bar at the top of the list ; click = filter, "All" button = clear, Cmd-click = multi-tag (AND) `[VERIFIED 2803581]` ; `Ctrl-Esc` leaves the filter `[VERIFIED 2785159]` |
 
-## 3. To-do ouvert (expanded)
+## 3. Open to-do (expanded)
 
-Double-clic, Return, ou clic sur titre déjà sélectionné ouvre `[VERIFIED 2803581]` (double-clic) / `[VERIFIED 2785159]` (Return ouvre).
+Double-click, Return, or clicking an already selected title opens it `[VERIFIED 2803581]` (double-click) / `[VERIFIED 2785159]` (Return opens).
 
 ```
 +______________________________________________________________+
-|  [ ]  Titre du to-do                                         |
+|  [ ]  To-do title                                            |
 |       Notes (Markdown)                                       |
 |                                                              |
-|       [ ] item de checklist                                  |
+|       [ ] checklist item                                     |
 |       [ ] item                                               |
 |                                                              |
 |  [tag][tag]                          [star Today]  [flag 5d] |
-|  [Tags] [Checklist] [When]  [Deadline]              [More]   |  barre d'actions
+|  [Tags] [Checklist] [When]  [Deadline]              [More]   |  action bar
 +______________________________________________________________+
 ```
 
-- Champs et boutons : Tags (clic -> champ de saisie, Return), When, Deadline (drapeau), Checklist (`Shift-Cmd-C`), More (Share..., Repeat...) `[VERIFIED 2803581]` `[VERIFIED 2803566]` `[VERIFIED 2803564]`.
+- Fields and buttons: Tags (click -> input field, Return), When, Deadline (flag), Checklist (`Shift-Cmd-C`), More (Share..., Repeat...) `[VERIFIED 2803581]` `[VERIFIED 2803566]` `[VERIFIED 2803564]`.
 - "In the toolbar at the bottom of the window, click More > Share..." `[VERIFIED 2803566]`.
-- Esc : ferme et enregistre ; `Cmd-Return` : enregistre et ferme `[VERIFIED 2785159]` ("In the main app, the Esc key collapses open to-dos and saves changes").
-- Supprimer un tag : clic sur le tag puis Delete `[VERIFIED 2803581]`.
-- Survol devant un to-do : un bouton calendrier apparaît à gauche ("hover your mouse in front of a to-do and click the calendar button") `[VERIFIED features]` (Jump Start).
-- Find in Text (`Cmd-F` dans notes via Shift-Cmd-F) `[VERIFIED 2785159]`.
-- Liens : `Opt-Cmd-Return` ouvre le lien sous le curseur `[VERIFIED 2785159]`.
-- Un to-do copié depuis un répétitif : lien "This is a copy of a repeating to-do" `[VERIFIED 2803564]`.
+- Esc: closes and saves ; `Cmd-Return`: saves and closes `[VERIFIED 2785159]` ("In the main app, the Esc key collapses open to-dos and saves changes").
+- Removing a tag: click the tag then Delete `[VERIFIED 2803581]`.
+- Hovering in front of a to-do: a calendar button appears on the left ("hover your mouse in front of a to-do and click the calendar button") `[VERIFIED features]` (Jump Start).
+- Find in Text (`Cmd-F` inside notes via Shift-Cmd-F) `[VERIFIED 2785159]`.
+- Links: `Opt-Cmd-Return` opens the link under the cursor `[VERIFIED 2785159]`.
+- A to-do copied from a repeating one: "This is a copy of a repeating to-do" link `[VERIFIED 2803564]`.
 
 ## 4. Popovers
 
@@ -82,125 +82,125 @@ Double-clic, Return, ou clic sur titre déjà sélectionné ouvre `[VERIFIED 280
 
 ```
 +__________________________+
-| [ type a date ...      ] |  champ NL ("tues 8am", "17d") [VERIFIED 9780167]
+| [ type a date ...      ] |  NL field ("tues 8am", "17d") [VERIFIED 9780167]
 | [star] Today             |
 | [moon] This Evening      |
 | [box]  Someday           |
 |  < nov 2026 >            |
-|  calendrier mois         |
+|  calendar month          |
 | [+] Add Reminder         |
 | [Clear]                  |
 +__________________________+
 ```
 
-- Taper pour filtrer/interpréter ; Return pour valider `[VERIFIED 9780167]`.
-- Add Reminder : champ d'heure puis Done `[VERIFIED 2803585]`.
-- Les raccourcis `Cmd-T/E/R/O` évitent le popover `[VERIFIED 2785159]`.
+- Type to filter/interpret ; Return to confirm `[VERIFIED 9780167]`.
+- Add Reminder: time field then Done `[VERIFIED 2803585]`.
+- The `Cmd-T/E/R/O` shortcuts bypass the popover `[VERIFIED 2785159]`.
 
 ### Deadline, `Shift-Cmd-D`
 
-- Même popover calendrier, avec NL, bouton Clear `[VERIFIED 9780167]` `[VERIFIED 2803579]`.
+- Same calendar popover, with NL and a Clear button `[VERIFIED 9780167]` `[VERIFIED 2803579]`.
 
 ### Tags
 
-- Popover liste de tags avec case, recherche ; `Shift-Cmd-T` ; fenêtre dédiée Window > Tags (`Ctrl-Cmd-T`) pour gérer, assigner des raccourcis, imbriquer par drop, réordonner `[VERIFIED 2803581]`.
-- Drag and drop to-do sur tag ou tag sur to-do `[VERIFIED 2803581]`.
+- Popover with the tag list, checkboxes, search ; `Shift-Cmd-T` ; dedicated Window > Tags window (`Ctrl-Cmd-T`) to manage them, assign shortcuts, nest by drag, reorder `[VERIFIED 2803581]`.
+- Drag and drop a to-do onto a tag or a tag onto a to-do `[VERIFIED 2803581]`.
 
 ### Move dialog (`Shift-Cmd-M`)
 
-- Champ de recherche, liste d'Inbox, Areas, projets ; Enter pour valider ; permet de cibler headings et projets inactifs `[VERIFIED 4001304]` + `[VERIFIED features]` ("Quick Move").
+- Search field, list of Inbox, Areas, projects ; Enter to confirm ; can target headings and inactive projects `[VERIFIED 4001304]` + `[VERIFIED features]` ("Quick Move").
 
 ### Repeat (`Shift-Cmd-R`)
 
-- Panneau avec mode (After completion / Daily / Weekly / Monthly / Yearly), intervalle, jours sélectionnables via bouton +, "Add deadlines" avec "days earlier", date de fin, OK `[VERIFIED 2803564]` `[VERIFIED 3743733]`.
-- Menu de la règle (sur template) : Edit Rule..., Create Next Copy, Show Previous Copy, Pause, Resume, Stop `[VERIFIED 2803564]`.
+- Panel with mode (After completion / Daily / Weekly / Monthly / Yearly), interval, days selectable via the + button, "Add deadlines" with "days earlier", end date, OK `[VERIFIED 2803564]` `[VERIFIED 3743733]`.
+- Rule menu (on the template): Edit Rule..., Create Next Copy, Show Previous Copy, Pause, Resume, Stop `[VERIFIED 2803564]`.
 
 ## 5. Quick Entry (global)
 
 ```
 +__________________________________________+
-| [ ] Titre du to-do                       |
+| [ ] To-do title                          |
 |     Notes                                |
 |  [Inbox v]  [tags] [When] [Deadline]     |
 |                          [Cancel] [Save] |
 +__________________________________________+
 ```
 
-- Raccourci global par défaut : `Ctrl-Space` ; configurable dans Things > Settings > Quick Entry `[VERIFIED https://culturedcode.com/things/support/articles/2249437/]`.
-- Fenêtre flottante près du curseur/centre `[FROM-MEMORY]`. Titre, notes, choix de la liste destination (Inbox par défaut), tags, When, Deadline ; "All the keyboard shortcuts ... work inside of Quick Entry as well" `[VERIFIED 2249437]`.
-- Boutons Save / Cancel ; `Esc` ferme et jette ; `Cmd-Return` ferme et enregistre `[VERIFIED 2249437]`.
-- Navigation Tab nécessite "Keyboard Navigation" macOS `[VERIFIED 2249437]`.
-- Bug connu : apple bloque les raccourcis à seul modificateur Shift (macOS 15.2) `[VERIFIED 2249437]`.
+- Default global shortcut: `Ctrl-Space` ; configurable in Things > Settings > Quick Entry `[VERIFIED https://culturedcode.com/things/support/articles/2249437/]`.
+- Floating window near the cursor/centre `[FROM-MEMORY]`. Title, notes, destination list choice (Inbox by default), tags, When, Deadline ; "All the keyboard shortcuts ... work inside of Quick Entry as well" `[VERIFIED 2249437]`.
+- Save / Cancel buttons ; `Esc` closes and discards ; `Cmd-Return` closes and saves `[VERIFIED 2249437]`.
+- Tab navigation requires macOS "Keyboard Navigation" `[VERIFIED 2249437]`.
+- Known bug: Apple blocks shortcuts with Shift as the only modifier (macOS 15.2) `[VERIFIED 2249437]`.
 
 ### Quick Entry with Autofill
 
-- `Ctrl-Opt-Space` par défaut ; capture le lien de la page Safari, du mail Mail ou du fichier Finder courant dans les notes du to-do ; nécessite l'installation d'un "Helper" ; Settings > Quick Entry > "Enable shortcut for Quick Entry with Autofill" `[VERIFIED 2249437]`.
-- Peut ranger directement sous un heading `[VERIFIED 2249437]`.
+- `Ctrl-Opt-Space` by default ; captures the link of the current Safari page, Mail message or Finder file into the to-do notes ; requires a "Helper" to be installed ; Settings > Quick Entry > "Enable shortcut for Quick Entry with Autofill" `[VERIFIED 2249437]`.
+- Can file directly under a heading `[VERIFIED 2249437]`.
 
-## 6. Quick Find et Type Travel
+## 6. Quick Find and Type Travel
 
-- Type Travel : aucune combinaison requise, on commence à taper n'importe où ; la recherche s'ouvre immédiatement `[VERIFIED features]` ("As soon as you strike a key, the search is on") `[VERIFIED 2803584]`.
-- `Cmd-F` ouvre aussi la recherche `[VERIFIED 2785159]`.
-- Résultats instantanés : to-dos, projets, areas, tags, listes par défaut/spéciales, headings ; "Continue Search" pour notes/checklists/Logbook `[VERIFIED 2803584]`.
-- Navigation : taper "tod" puis Return -> Today ; "finan" -> area Finances ; "next action" -> heading `[VERIFIED 2803584]`.
-- `Cmd-Return` ou Cmd-clic : ouvrir le résultat en nouvelle fenêtre `[VERIFIED 2785159]`.
-- Taper un tag : filtre app-wide `[VERIFIED features]`.
+- Type Travel: no key combination required, you just start typing anywhere ; the search opens immediately `[VERIFIED features]` ("As soon as you strike a key, the search is on") `[VERIFIED 2803584]`.
+- `Cmd-F` also opens the search `[VERIFIED 2785159]`.
+- Instant results: to-dos, projects, areas, tags, default/special lists, headings ; "Continue Search" for notes/checklists/Logbook `[VERIFIED 2803584]`.
+- Navigation: type "tod" then Return -> Today ; "finan" -> area Finances ; "next action" -> heading `[VERIFIED 2803584]`.
+- `Cmd-Return` or Cmd-click: open the result in a new window `[VERIFIED 2785159]`.
+- Typing a tag: app-wide filter `[VERIFIED features]`.
 
-## 7. Menu bar (menus de l'app) `[FROM-MEMORY]`, détails `[VERIFIED 2785159]`
+## 7. Menu bar (app menus) `[FROM-MEMORY]`, details `[VERIFIED 2785159]`
 
-| Menu | Entrées principales |
+| Menu | Main entries |
 |-|-|
 | Things | About, Settings... (`Cmd-,`), Services, Hide, Quit |
 | File | New To-Do, New Project, New Heading, New Repeating To-Do `[VERIFIED 2803564]`, New Window, Close, Print |
 | Edit | Undo/Redo, Cut/Copy/Paste, Duplicate, Select All, Find (Quick Find), Find in Text/Find and Replace, Markdown submenu, Spelling, Substitutions `[VERIFIED 4438545]` |
 | Items | Complete, Cancel, When (Show When, Today, This Evening, Anytime, Someday), Add Deadline, Repeat..., Tags, Move..., Move to Top/Bottom, Show in Parent List `[VERIFIED 2785159]` `[VERIFIED 2803564]` ("Items > Repeat") |
-| View | Show/Hide Sidebar, Toolbar, Go To (listes spéciales : Tomorrow, Deadlines, Repeating, All Projects, Logged Projects), Show/Hide later items `[VERIFIED 2803584]` `[VERIFIED 2785159]` |
-| Window | Minimize, Zoom, Tags (fenêtre) `[VERIFIED 2803581]`, nouvelle fenêtre |
-| Help | Keyboard Shortcuts (page de support) `[VERIFIED 2785159]` |
+| View | Show/Hide Sidebar, Toolbar, Go To (special lists: Tomorrow, Deadlines, Repeating, All Projects, Logged Projects), Show/Hide later items `[VERIFIED 2803584]` `[VERIFIED 2785159]` |
+| Window | Minimize, Zoom, Tags (window) `[VERIFIED 2803581]`, new window |
+| Help | Keyboard Shortcuts (support page) `[VERIFIED 2785159]` |
 
-Tout raccourci peut être redéfini dans Réglages Système pour toute commande visible dans les menus `[VERIFIED 2785159]`.
+Any shortcut can be redefined in System Settings for any command visible in the menus `[VERIFIED 2785159]`.
 
-## 8. Settings (Things > Settings) `[FROM-MEMORY]` sauf mention
+## 8. Settings (Things > Settings) `[FROM-MEMORY]` unless stated
 
-- General : Text Size (curseur) `[VERIFIED 8537373]`, Group Today by project/area `[VERIFIED 4001304]`, Show Mac badge count / compteur du Dock `[UNSURE]`, Move completed to Logbook : Immediately / Daily / Manually `[UNSURE]`.
-- Calendar Events : case Show Calendar Events in Today and Upcoming + calendriers `[VERIFIED 2803583]`.
-- Quick Entry : raccourcis, option Autofill + Helper `[VERIFIED 2249437]`.
+- General: Text Size (slider) `[VERIFIED 8537373]`, Group Today by project/area `[VERIFIED 4001304]`, Show Mac badge count / Dock counter `[UNSURE]`, Move completed to Logbook: Immediately / Daily / Manually `[UNSURE]`.
+- Calendar Events: Show Calendar Events in Today and Upcoming checkbox + calendars `[VERIFIED 2803583]`.
+- Quick Entry: shortcuts, Autofill + Helper option `[VERIFIED 2249437]`.
 - Things Cloud `[VERIFIED 2803586]`.
-- Appearance : "Icon & widget style" `[VERIFIED 2803567]`.
+- Appearance: "Icon & widget style" `[VERIFIED 2803567]`.
 - Notifications `[UNSURE]`.
 
 ## 9. Menu bar extra / badge
 
-- Badge Dock : nombre de to-dos Today (+ rouge si deadlines atteintes ?) `[UNSURE]`.
-- Pas de menu bar extra officiel (Things n'en a pas) `[FROM-MEMORY]` ; tout passe par Quick Entry, widget et Dock badge.
-- Widgets macOS : bureau et Notification Center depuis Sonoma ; mêmes types que iOS `[VERIFIED 2803567]`.
+- Dock badge: number of Today to-dos (+ red if deadlines are due?) `[UNSURE]`.
+- No official menu bar extra (Things does not have one) `[FROM-MEMORY]` ; everything goes through Quick Entry, the widget and the Dock badge.
+- macOS widgets: desktop and Notification Center since Sonoma ; same types as iOS `[VERIFIED 2803567]`.
 
 ## 10. Drag and drop (Mac)
 
-| Source | Cible | Résultat `[FROM-MEMORY]` sauf mention |
+| Source | Target | Result `[FROM-MEMORY]` unless stated |
 |-|-|-|
-| to-do | autre position dans la liste | réordonne |
-| to-do | liste dans la sidebar (Today, Someday, projet, area) | déplace/planifie dans cette liste |
-| to-do | jour dans Upcoming | start date = ce jour `[VERIFIED 4001304]` |
-| to-do | tag dans la fenêtre Tags | applique le tag `[VERIFIED 2803581]` |
-| tag | to-do | applique le tag `[VERIFIED 2803581]` |
-| tag | autre tag | imbrique `[VERIFIED 2803581]` |
-| to-dos multiples | n'importe où | déplace en bloc |
-| heading | autre position dans le projet | déplace avec ses to-dos `[VERIFIED features]` |
-| heading | autre fenêtre | déplace vers un autre projet `[VERIFIED 2803582]` (iPad) |
-| projet | area dans sidebar | range dans l'area |
-| to-do | autre fenêtre Things | déplace entre listes `[VERIFIED features]` |
-| texte multi-lignes | liste | un to-do par ligne (comme `Cmd-V`) `[VERIFIED 2785159]` |
+| to-do | another position in the list | reorders |
+| to-do | list in the sidebar (Today, Someday, project, area) | moves/schedules into that list |
+| to-do | day in Upcoming | start date = that day `[VERIFIED 4001304]` |
+| to-do | tag in the Tags window | applies the tag `[VERIFIED 2803581]` |
+| tag | to-do | applies the tag `[VERIFIED 2803581]` |
+| tag | another tag | nests `[VERIFIED 2803581]` |
+| multiple to-dos | anywhere | moves them as a block |
+| heading | another position in the project | moves it with its to-dos `[VERIFIED features]` |
+| heading | another window | moves it to another project `[VERIFIED 2803582]` (iPad) |
+| project | area in the sidebar | files it in the area |
+| to-do | another Things window | moves it between lists `[VERIFIED features]` |
+| multi-line text | list | one to-do per line (like `Cmd-V`) `[VERIFIED 2785159]` |
 
-## 11. Interactions diverses
+## 11. Miscellaneous interactions
 
-- Espace sur un to-do sélectionné : nouveau to-do en dessous `[VERIFIED 2785159]`.
-- `Cmd-V` de texte multi-lignes : un to-do par ligne `[VERIFIED 2785159]`.
-- Clic sur la checkbox avec Opt : annule (cancel) au lieu de compléter `[VERIFIED 2785159]`.
-- Hover devant un to-do : bouton When (calendrier) `[VERIFIED features]`.
-- Selection : flèches, Shift pour étendre, Opt pour sauter aux extrêmes `[VERIFIED 2785159]`.
-- Touch Bar : accès aux commandes fréquentes `[VERIFIED features]`.
+- Space on a selected to-do: new to-do underneath `[VERIFIED 2785159]`.
+- `Cmd-V` of multi-line text: one to-do per line `[VERIFIED 2785159]`.
+- Opt-click on the checkbox: cancels instead of completing `[VERIFIED 2785159]`.
+- Hover in front of a to-do: When (calendar) button `[VERIFIED features]`.
+- Selection: arrow keys, Shift to extend, Opt to jump to the extremes `[VERIFIED 2785159]`.
+- Touch Bar: access to frequent commands `[VERIFIED features]`.
 
-## Récapitulatif [UNSURE]
+## Recap of [UNSURE]
 
-Largeur de sidebar ; position exacte des boutons de toolbar ; contenu exact des menus File/Items/View ; options exactes de Settings > General ; comportement du badge Dock ; menu "Move completed to Logbook" (options) ; apparence exacte des popovers.
+Sidebar width ; exact position of the toolbar buttons ; exact content of the File/Items/View menus ; exact Settings > General options ; Dock badge behaviour ; "Move completed to Logbook" menu (options) ; exact appearance of the popovers.

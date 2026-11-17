@@ -72,7 +72,7 @@ Quick Find is now an overlay card (not a sheet) in `ThingsMacSheets`. Results: d
 
 ## DEVIATIONS.md rows to merge (file is shared, not edited here)
 
-| Spec | Écart | Statut |
+| Spec | Deviation | Status |
 |-|-|-|
-| 04 section 6 (Type Travel) | Fait sur Mac par un `onKeyPress` à la racine, sans combinaison requise. Les premières touches tapées pendant l'ouverture de la carte peuvent être perdues. Quick Find est une carte en surimpression, pas une fenêtre. Pas de "Continue Search", pas de Cmd-Return, pas de headings. Pas de Type Travel sur iPhone. | stopgap |
-| 04 section 5 and 02 (langage naturel) | Le langage naturel remplace en partie les boutons When, Deadline et tags du Quick Entry. Syntaxe : voir WIRING-AGENT3.md. Les tags et projets inconnus ne sont pas créés. Un rappel utilise l'heure tapée sur le jour du When. | stopgap |
+| 04 section 6 (Type Travel) | Implemented on Mac with a root `onKeyPress`, with no key combination required. The first keystrokes typed while the card opens can be lost. Quick Find is an overlay card, not a window. No "Continue Search", no Cmd-Return, no headings. No Type Travel on iPhone. | stopgap |
+| 04 section 5 and 02 (natural language) | Natural language partly replaces the When, Deadline and tag buttons of Quick Entry. Syntax: see WIRING-AGENT3.md. Unknown tags and projects are not created. A reminder uses the time typed on the When day. | stopgap |

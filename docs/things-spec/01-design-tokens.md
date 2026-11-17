@@ -1,226 +1,226 @@
 # 01 - Design tokens
 
-Rappel : Cultured Code ne publie aucune valeur visuelle. Tout ce qui est chiffré ici est `[FROM-MEMORY]` ou `[PROPOSAL]` et doit être calibré sur captures. Les noms de tokens sont des propositions pour le code SwiftUI (`ThingsTheme`).
+Reminder: Cultured Code publishes no visual values. Everything quantified here is `[FROM-MEMORY]` or `[PROPOSAL]` and must be calibrated against screenshots. The token names are proposals for the SwiftUI code (`ThingsTheme`).
 
-Mise a jour : la section 8 calibre sur les captures Mac (`reference/mac-dark-0N.png`) les valeurs Mac et la palette sombre chaude, avec une etiquette MEASURED, ESTIMATED, DERIVED ou UNSURE par valeur. Elle l emporte sur les sections 2 a 4 pour tout ce qui y figure.
+Update: section 8 calibrates the Mac values and the warm dark palette against the Mac screenshots (`reference/mac-dark-0N.png`), with a MEASURED, ESTIMATED, DERIVED or UNSURE tag on each value. It overrides sections 2 to 4 for everything it covers.
 
-## 1. Principes visuels
+## 1. Visual principles
 
-- "Une feuille de papier propre" : fond blanc, contenu sans bordure, très peu de séparateurs `[VERIFIED https://culturedcode.com/things/features/]` (citation de presse : "a clean, crisp piece of paper").
-- À l'ouverture, un to-do "se transforme en une feuille blanche" : l'item s'agrandit en carte blanche avec ombre portée, les champs secondaires (tags, checklist, When, Deadline) sont rangés dans un coin tant qu'ils ne servent pas `[VERIFIED features]`.
-- Tout est animé avec un toolkit maison ("Everything you do in Things is nicely animated for pop") `[VERIFIED features]`.
-- Retour haptique présent partout ("Haptic Feedback") `[VERIFIED features]`.
-- Mode sombre et Dynamic Type supportés, thème "Black" (noir pur) pour widgets `[VERIFIED https://culturedcode.com/things/support/articles/2803567/]`.
+- "A clean sheet of paper": white background, borderless content, very few separators `[VERIFIED https://culturedcode.com/things/features/]` (press quote: "a clean, crisp piece of paper").
+- On opening, a to-do "turns into a blank sheet": the item grows into a white card with a drop shadow, the secondary fields (tags, checklist, When, Deadline) are tucked into a corner as long as they are unused `[VERIFIED features]`.
+- Everything is animated with an in-house toolkit ("Everything you do in Things is nicely animated for pop") `[VERIFIED features]`.
+- Haptic feedback everywhere ("Haptic Feedback") `[VERIFIED features]`.
+- Dark mode and Dynamic Type supported, "Black" theme (pure black) for widgets `[VERIFIED https://culturedcode.com/things/support/articles/2803567/]`.
 
-## 2. Couleurs
+## 2. Colours
 
-### 2.1 Accent et sémantique `[FROM-MEMORY]` sauf mention
+### 2.1 Accent and semantics `[FROM-MEMORY]` unless stated
 
 | Token | Light | Dark | Usage |
 |-|-|-|-|
-| accent (blue) | #1E7BF4 `[UNSURE]` approx #007AFF-like | #3D8FF7 | boutons, liens, Magic Plus, sélection, badge Inbox, flèches |
-| todayStar (yellow) | #FFCC00 approx `[UNSURE]` | #FFD60A | icône Today, étoile devant to-do Today dans Anytime/projets |
-| eveningMoon | #3A59D1 bleu-violet `[UNSURE]` | #5E7CF5 | icône et titre de section This Evening |
-| deadlineFlame (red) | #FF3B30 approx `[UNSURE]` | #FF453A | drapeau/flamme + "X days left" ; en retard : plus soutenu |
-| inboxBlue | = accent | | icône tray |
-| upcomingRed | #F2405D approx `[UNSURE]` | | icône calendrier Upcoming (rouge-rose) |
-| anytimeTeal | #35B6A7 approx `[UNSURE]` | | icône Anytime (pile de couches) |
-| somedayTan | #D8B98A approx `[UNSURE]` | | icône Someday (boîte beige) |
-| logbookGreen | #4CC260 approx `[UNSURE]` | | icône Logbook (livre avec coche) |
-| areaGray | #8E8E93 | | icône Area (boîte/coffre) |
-| filterBarGreen | #34C759 approx | | barre de filtre de tag active `[VERIFIED https://culturedcode.com/things/support/articles/2803581/]` ("tap the green filter bar") ; teinte exacte `[UNSURE]` |
+| accent (blue) | #1E7BF4 `[UNSURE]` approx #007AFF-like | #3D8FF7 | buttons, links, Magic Plus, selection, Inbox badge, arrows |
+| todayStar (yellow) | #FFCC00 approx `[UNSURE]` | #FFD60A | Today icon, star in front of a Today to-do inside Anytime/projects |
+| eveningMoon | #3A59D1 blue-violet `[UNSURE]` | #5E7CF5 | This Evening icon and section title |
+| deadlineFlame (red) | #FF3B30 approx `[UNSURE]` | #FF453A | flag/flame + "X days left" ; when overdue: stronger |
+| inboxBlue | = accent | | tray icon |
+| upcomingRed | #F2405D approx `[UNSURE]` | | Upcoming calendar icon (red-pink) |
+| anytimeTeal | #35B6A7 approx `[UNSURE]` | | Anytime icon (stack of layers) |
+| somedayTan | #D8B98A approx `[UNSURE]` | | Someday icon (tan box) |
+| logbookGreen | #4CC260 approx `[UNSURE]` | | Logbook icon (book with a check) |
+| areaGray | #8E8E93 | | Area icon (box/chest) |
+| filterBarGreen | #34C759 approx | | active tag filter bar `[VERIFIED https://culturedcode.com/things/support/articles/2803581/]` ("tap the green filter bar") ; exact tint `[UNSURE]` |
 
-### 2.2 Neutres
+### 2.2 Neutrals
 
 | Token | Light | Dark `[FROM-MEMORY]` |
 |-|-|-|
-| bgPrimary (liste, fenêtre) | #FFFFFF | #1C1C1E (thème Dark) ou #000000 (thème Black, réglage Appearance) |
-| bgSidebar / Home iPhone | #F5F6F8 mac sidebar translucide ; iPhone Home #FFFFFF | #2C2C2E |
-| bgExpandedTodo (carte ouverte) | #FFFFFF + ombre | #2C2C2E |
-| textPrimary | #1D1D1F `[UNSURE]` approx noir | #F2F2F7 |
-| textSecondary (notes aperçu, tags, compteurs) | #8E8E93 | #98989D |
+| bgPrimary (list, window) | #FFFFFF | #1C1C1E (Dark theme) or #000000 (Black theme, Appearance setting) |
+| bgSidebar / iPhone Home | #F5F6F8 translucent Mac sidebar ; iPhone Home #FFFFFF | #2C2C2E |
+| bgExpandedTodo (open card) | #FFFFFF + shadow | #2C2C2E |
+| textPrimary | #1D1D1F `[UNSURE]` approx black | #F2F2F7 |
+| textSecondary (note preview, tags, counters) | #8E8E93 | #98989D |
 | textPlaceholder | #C7C7CC | #48484A |
-| separator | #E5E5EA, 0,5 pt, inset gauche aligné sur le texte du titre | #38383A |
+| separator | #E5E5EA, 0.5 pt, left inset aligned with the title text | #38383A |
 | checkboxBorder | #B8BCC4 `[UNSURE]` | #636366 |
 | tagPillBg | #EDEDF0 | #3A3A3C |
 | tagPillText | #6D6D72 | #AEAEB2 |
-| selectionRow (multi-select) | accent à 12 % | accent à 22 % |
-| somedayDim | textPrimary à 50 % (items Someday "prennent la place arrière visuellement") `[VERIFIED https://culturedcode.com/things/support/articles/4001304/]` | idem |
+| selectionRow (multi-select) | accent at 12 % | accent at 22 % |
+| somedayDim | textPrimary at 50 % (Someday items "visually take a back seat") `[VERIFIED https://culturedcode.com/things/support/articles/4001304/]` | same |
 
 ### 2.3 Tags
 
-Les tags de Things 3 n'ont pas de couleur propre : pill grise uniforme `[FROM-MEMORY]`. Seule la barre de filtre devient verte quand un filtre est actif `[VERIFIED 2803581]`. Tags livrés par défaut : Home, Office, Errand, Important, Pending `[VERIFIED 2803581]`. Les tags peuvent être groupés (imbriqués) `[VERIFIED 2803581]`.
+Things 3 tags have no colour of their own: uniform grey pill `[FROM-MEMORY]`. Only the filter bar turns green when a filter is active `[VERIFIED 2803581]`. Tags shipped by default: Home, Office, Errand, Important, Pending `[VERIFIED 2803581]`. Tags can be grouped (nested) `[VERIFIED 2803581]`.
 
 ### 2.4 Checkbox
 
-| État | Rendu `[FROM-MEMORY]` |
+| State | Rendering `[FROM-MEMORY]` |
 |-|-|
-| to-do ouvert | carré arrondi 22x22 pt (iPhone), 16x16 pt (Mac), rayon 5 pt (iPhone) / 4 pt (Mac), contour 1,5 pt checkboxBorder, intérieur vide |
-| to-do complété | carré plein accent (ou gris atténué selon contexte), coche blanche ; le titre passe en gris et est barré après un court délai |
-| to-do annulé (cancelled) | carré gris avec croix `x` ; titre barré |
-| to-do du Today dans Anytime/projet | étoile jaune affichée devant la checkbox (la checkbox reste) `[VERIFIED 4001304]` ("yellow star in front of them") |
-| projet | disque "progress pie" : cercle contour accent, secteur plein proportionnel à l'avancement `[VERIFIED features]` ("Progress Pies") |
-| item de checklist | petit cercle (pas carré) `[VERIFIED https://culturedcode.com/things/support/articles/2803582/]` ("Tap the circle in front") 16 pt iPhone |
-| template répétitif | flèche circulaire bleue devant le titre `[VERIFIED https://culturedcode.com/things/support/articles/2803564/]` ("blue circle arrow") |
+| open to-do | rounded square 22x22 pt (iPhone), 16x16 pt (Mac), radius 5 pt (iPhone) / 4 pt (Mac), 1.5 pt checkboxBorder stroke, empty inside |
+| completed to-do | filled accent square (or faded grey depending on context), white check ; the title turns grey and is struck through after a short delay |
+| cancelled to-do | grey square with an `x` cross ; title struck through |
+| Today to-do inside Anytime/project | yellow star shown in front of the checkbox (the checkbox stays) `[VERIFIED 4001304]` ("yellow star in front of them") |
+| project | "progress pie" disc: accent stroke circle, filled sector proportional to completion `[VERIFIED features]` ("Progress Pies") |
+| checklist item | small circle (not a square) `[VERIFIED https://culturedcode.com/things/support/articles/2803582/]` ("Tap the circle in front") 16 pt iPhone |
+| repeating template | blue circular arrow in front of the title `[VERIFIED https://culturedcode.com/things/support/articles/2803564/]` ("blue circle arrow") |
 
-## 3. Typographie (SF Pro, Dynamic Type)
+## 3. Typography (SF Pro, Dynamic Type)
 
-Things suit Dynamic Type sur iOS, avec option "Custom" dans Settings > Appearance ; sur Mac un curseur "Text Size" dans Settings > General, avec atténuation de la sidebar aux grandes tailles `[VERIFIED https://culturedcode.com/things/support/articles/8537373/]`.
+Things follows Dynamic Type on iOS, with a "Custom" option under Settings > Appearance ; on Mac a "Text Size" slider under Settings > General, with the sidebar fading out at large sizes `[VERIFIED https://culturedcode.com/things/support/articles/8537373/]`.
 
-| Élément | iPhone | Mac | Graisse |
+| Element | iPhone | Mac | Weight |
 |-|-|-|-|
-| Titre de liste (Today, Inbox, titre de projet) | 34 pt (largeTitle) `[UNSURE]` | 26 pt `[UNSURE]` | bold |
-| Titre de to-do en liste | 17 pt (body) | 13 pt | regular |
-| Titre de to-do ouvert | 17 pt | 14 pt | regular (pas de bold) |
-| Notes aperçu / notes | 15 pt | 12-13 pt | regular, textSecondary |
-| Heading de projet | 20 pt (title3) `[UNSURE]` | 16 pt | semibold, couleur accent ; trait sous le titre (hairline accent) |
-| Titre de section (This Evening, jour dans Upcoming) | 17-20 pt | 13-16 pt | semibold |
-| Jour dans Upcoming (grand chiffre) | 28 pt `[UNSURE]` | 26 pt | bold + nom du jour en gris 15 pt |
-| Sidebar / Home row | 17 pt | 13 pt | regular ; compteurs 15/12 pt secondary |
+| List title (Today, Inbox, project title) | 34 pt (largeTitle) `[UNSURE]` | 26 pt `[UNSURE]` | bold |
+| To-do title in a list | 17 pt (body) | 13 pt | regular |
+| Open to-do title | 17 pt | 14 pt | regular (no bold) |
+| Note preview / notes | 15 pt | 12-13 pt | regular, textSecondary |
+| Project heading | 20 pt (title3) `[UNSURE]` | 16 pt | semibold, accent colour ; rule under the title (hairline accent) |
+| Section title (This Evening, day in Upcoming) | 17-20 pt | 13-16 pt | semibold |
+| Day in Upcoming (big numeral) | 28 pt `[UNSURE]` | 26 pt | bold + day name in grey 15 pt |
+| Sidebar / Home row | 17 pt | 13 pt | regular ; counters 15/12 pt secondary |
 | Tags pill | 13 pt (footnote) | 11 pt | regular |
-| Deadline label ("5 days left") | 13 pt | 11 pt | regular, rouge si <= 0 |
+| Deadline label ("5 days left") | 13 pt | 11 pt | regular, red if <= 0 |
 
-Pas de style dans les titres : le Markdown n'affecte ni titres de to-do, ni noms de projets/areas `[VERIFIED https://culturedcode.com/things/support/articles/4438545/]` ("styling will not show in to-do titles or names of projects or areas"). Les notes supportent Markdown, les marqueurs restent visibles `[VERIFIED 4438545]`.
+No styling in titles: Markdown affects neither to-do titles nor project/area names `[VERIFIED https://culturedcode.com/things/support/articles/4438545/]` ("styling will not show in to-do titles or names of projects or areas"). Notes support Markdown, the markers stay visible `[VERIFIED 4438545]`.
 
-## 4. Espacements et dimensions
+## 4. Spacing and dimensions
 
-Valeurs `[FROM-MEMORY]` / `[PROPOSAL]`, à calibrer.
+Values `[FROM-MEMORY]` / `[PROPOSAL]`, to be calibrated.
 
-| Élément | iPhone | Mac |
+| Element | iPhone | Mac |
 |-|-|-|
-| Marge horizontale de liste | 16 pt (checkbox x=16) | 20 pt |
-| Hauteur minimale de ligne to-do | 44 pt (titre seul) ; ~ 52-58 pt avec tags/deadline/notes | 28-30 pt (titre seul) |
-| Checkbox - titre espacement | 12 pt | 8 pt |
-| Séparateur ligne | 0,5 pt, inset gauche 50 pt, droite 0 | 0,5 pt hairline |
-| To-do ouvert (carte) | marge 8 pt autour, padding intérieur 16 pt, rayon 10 pt `[UNSURE]`, ombre douce (y 2, flou 12, 12 % noir) | rayon 8 pt, ombre y 2 flou 10 |
-| Rayon des boutons capsules (tags, When) | capsule (rayon = h/2) | idem |
-| Magic Plus | disque 56 pt, bleu accent, plus blanc, ombre ; position : coin bas-droit, 16 pt des bords, au-dessus de la barre d'accueil | n/a (bouton + en bas à gauche de la fenêtre, 22 pt) |
-| Sidebar Mac | largeur 220 pt, redimensionnable 180-400 pt `[UNSURE]` | |
-| Ligne Home iPhone | 44-48 pt, icône 24 pt à x=16, titre x=56 | |
-| Icône de liste | 24 pt iPhone, 18 pt Mac | |
+| List horizontal margin | 16 pt (checkbox x=16) | 20 pt |
+| Minimum to-do row height | 44 pt (title alone) ; ~ 52-58 pt with tags/deadline/notes | 28-30 pt (title alone) |
+| Checkbox to title spacing | 12 pt | 8 pt |
+| Row separator | 0.5 pt, left inset 50 pt, right 0 | 0.5 pt hairline |
+| Open to-do (card) | 8 pt margin around, 16 pt inner padding, radius 10 pt `[UNSURE]`, soft shadow (y 2, blur 12, 12 % black) | radius 8 pt, shadow y 2 blur 10 |
+| Capsule button radius (tags, When) | capsule (radius = h/2) | same |
+| Magic Plus | 56 pt disc, accent blue, white plus, shadow ; position: bottom-right corner, 16 pt from the edges, above the home bar | n/a (+ button at the bottom left of the window, 22 pt) |
+| Mac sidebar | 220 pt wide, resizable 180-400 pt `[UNSURE]` | |
+| iPhone Home row | 44-48 pt, icon 24 pt at x=16, title x=56 | |
+| List icon | 24 pt iPhone, 18 pt Mac | |
 
-## 5. Icônes par liste (à redessiner)
+## 5. Icons per list (to be redrawn)
 
-| Élément | Glyphe | Couleur |
+| Element | Glyph | Colour |
 |-|-|-|
-| Inbox | plateau/tray ouvert | accent bleu |
-| Today | étoile pleine (5 branches arrondies) | todayStar |
-| This Evening | croissant de lune | eveningMoon |
-| Upcoming | calendrier (page avec bandeau) | upcomingRed |
-| Anytime | pile de couches (3 losanges empilés) | anytimeTeal |
-| Someday | boîte/caisse en carton | somedayTan |
-| Logbook | livre ouvert avec coche | logbookGreen |
-| Trash | corbeille (Mac sidebar, n'apparaît que si non vide) | gris |
-| Area | boîte/coffre gris `[UNSURE]` | areaGray |
-| Project | disque progress pie | accent |
-| Deadline | drapeau (flag) `[VERIFIED https://culturedcode.com/things/support/articles/2803579/]` ("deadline button ... the flag button") | deadlineFlame |
-| When | calendrier / étoile selon état | gris ; jaune si Today |
-| Tags | étiquette | gris |
-| Checklist | liste à puces | gris |
-| Repeat | flèches circulaires | gris ; bleu pour template |
-| Reminder | cloche / horloge | gris |
-| Magic Plus | `+` blanc sur disque bleu | |
+| Inbox | open tray | accent blue |
+| Today | filled star (5 rounded points) | todayStar |
+| This Evening | crescent moon | eveningMoon |
+| Upcoming | calendar (page with a header band) | upcomingRed |
+| Anytime | stack of layers (3 stacked diamonds) | anytimeTeal |
+| Someday | cardboard box/crate | somedayTan |
+| Logbook | open book with a check | logbookGreen |
+| Trash | waste bin (Mac sidebar, only shown when not empty) | grey |
+| Area | grey box/chest `[UNSURE]` | areaGray |
+| Project | progress pie disc | accent |
+| Deadline | flag `[VERIFIED https://culturedcode.com/things/support/articles/2803579/]` ("deadline button ... the flag button") | deadlineFlame |
+| When | calendar / star depending on state | grey ; yellow if Today |
+| Tags | label | grey |
+| Checklist | bulleted list | grey |
+| Repeat | circular arrows | grey ; blue for a template |
+| Reminder | bell / clock | grey |
+| Magic Plus | white `+` on a blue disc | |
 
-Dans l'app d'origine ces icônes sont dessinées sur mesure (SVG propriétaires) : les redessiner.
+In the original app these icons are custom drawn (proprietary SVGs): redraw them.
 
-## 6. Haptique `[FROM-MEMORY]` (présence `[VERIFIED features]`)
+## 6. Haptics `[FROM-MEMORY]` (presence `[VERIFIED features]`)
 
-| Événement | Feedback iOS proposé |
+| Event | Proposed iOS feedback |
 |-|-|
-| compléter un to-do (tap checkbox) | UIImpactFeedbackGenerator .light (ou .soft) |
-| soulever un item pour drag | .medium impact |
-| déposer un item | .light |
-| Magic Plus : soulever | .medium ; survol de l'Inbox target ou du bord gauche (heading) | selection feedback |
-| entrée en multi-select (swipe gauche) | selection changed |
-| balayage de sélection le long du bord droit | selection changed à chaque ligne |
-| pull-down atteint le seuil Quick Find | .light |
-| shake undo | notification .warning |
+| completing a to-do (checkbox tap) | UIImpactFeedbackGenerator .light (or .soft) |
+| lifting an item to drag | .medium impact |
+| dropping an item | .light |
+| Magic Plus: lifting | .medium ; hovering the Inbox target or the left edge (heading) | selection feedback |
+| entering multi-select (left swipe) | selection changed |
+| sweeping the selection along the right edge | selection changed on every row |
+| pull-down reaching the Quick Find threshold | .light |
+| shake undo | .warning notification |
 
-## 7. Animations `[FROM-MEMORY]` + `[PROPOSAL]` SwiftUI
+## 7. Animations `[FROM-MEMORY]` + SwiftUI `[PROPOSAL]`
 
-Cultured Code ne publie pas les courbes. Équivalents recommandés :
+Cultured Code does not publish the curves. Recommended equivalents:
 
-| Interaction | Comportement observé | SwiftUI proposé |
+| Interaction | Observed behaviour | Proposed SwiftUI |
 |-|-|-|
-| compléter un to-do | la coche se remplit (~ 0,15 s), titre grisé et barré, après ~ 1 s (laisse annuler) la ligne se rétracte et disparaît ; ou reste jusqu'au "Move completed to Logbook" selon réglage | `withAnimation(.spring(response:0.3,dampingFraction:0.8))` coche ; suppression après `DispatchQueue` 1,0 s avec `.easeInOut(0.25)` sur la hauteur |
-| ouvrir un to-do (expand-to-edit) | la ligne grandit en carte blanche, les lignes voisines glissent, ombre apparaît | `matchedGeometryEffect` + `.spring(response:0.35,dampingFraction:0.85)` ; ombre fade 0,2 s |
-| fermer | inverse, mêmes timings | idem |
-| reorder (drag) | item soulevé, légèrement agrandi (scale 1,03), ombre, les autres s'écartent | `.spring(response:0.28,dampingFraction:0.8)` |
-| Magic Plus drag | bouton suit le doigt, une ligne vide s'ouvre sous le doigt à l'endroit d'insertion ; relâcher : la ligne devient un nouveau to-do en édition | idem |
-| ouverture picker When | popover/feuille depuis le bas ; calendrier avec défilement mensuel | sheet standard |
-| bascule This Evening | l'item glisse vers la section du bas | `.easeInOut(0.3)` |
-| pull-down search | la barre de recherche se révèle, le contenu descend ; au-delà du seuil, bascule en recherche | seuil ~ 60 pt `[UNSURE]` |
+| completing a to-do | the check fills in (~ 0.15 s), title goes grey and struck through, after ~ 1 s (lets you undo) the row shrinks and disappears ; or stays until "Move completed to Logbook" depending on the setting | `withAnimation(.spring(response:0.3,dampingFraction:0.8))` check ; removal after `DispatchQueue` 1.0 s with `.easeInOut(0.25)` on the height |
+| opening a to-do (expand-to-edit) | the row grows into a white card, neighbouring rows slide, shadow appears | `matchedGeometryEffect` + `.spring(response:0.35,dampingFraction:0.85)` ; shadow fade 0.2 s |
+| closing | reverse, same timings | same |
+| reorder (drag) | lifted item, slightly enlarged (scale 1.03), shadow, the others part | `.spring(response:0.28,dampingFraction:0.8)` |
+| Magic Plus drag | the button follows the finger, an empty row opens under the finger at the insertion point ; on release: the row becomes a new to-do in edit mode | same |
+| opening the When picker | popover/sheet from the bottom ; calendar with monthly scrolling | standard sheet |
+| This Evening toggle | the item slides to the bottom section | `.easeInOut(0.3)` |
+| pull-down search | the search bar is revealed, the content moves down ; past the threshold, switches to search | threshold ~ 60 pt `[UNSURE]` |
 
-## Récapitulatif [UNSURE]
+## Recap of [UNSURE]
 
-Tous les hex de 2.1 et 2.2 ; tailles du titre de liste, des headings, des jours Upcoming ; rayons de carte ouverte ; largeur sidebar Mac ; seuil pull-down ; icône exacte d'Area ; teinte exacte de la filter bar.
+All the hex values in 2.1 and 2.2 ; list title, heading and Upcoming day sizes ; open card radii ; Mac sidebar width ; pull-down threshold ; exact Area icon ; exact filter bar tint.
 
-## 8. Calibration sur captures Mac (palette "dark warm")
+## 8. Calibration against Mac screenshots ("dark warm" palette)
 
-Source : `reference/mac-dark-01.png` a `05.png`, 3500 x 2218 px, capture retina 2x (1 pt = 2 px). Fenetre 1750 pt, sidebar 302 pt de large, colonne de liste 1020 pt (centree dans le volet de detail, 1448 pt). Cote des valeurs : `MEASURED` = lu sur la capture a environ 1 pt pres ou echantillon de pixel ; `ESTIMATED` = lu a l'oeil sur la capture, a 1 pt ou quelques niveaux pres ; `DERIVED` = variante claire deduite de la sombre, aucune capture claire ; `UNSURE` = toujours une hypothese (iOS, palette claire). Le code est dans `DesignSystem/Tokens`, un commentaire par valeur porte la meme etiquette. La palette sombre chaude remplace le gris froid iOS comme palette sombre par defaut (iOS aussi).
+Source: `reference/mac-dark-01.png` to `05.png`, 3500 x 2218 px, 2x retina capture (1 pt = 2 px). Window 1750 pt, sidebar 302 pt wide, list column 1020 pt (centred in the 1448 pt detail pane). Value grading: `MEASURED` = read on the screenshot to about 1 pt or from a pixel sample ; `ESTIMATED` = read by eye on the screenshot, to 1 pt or a few levels ; `DERIVED` = light variant deduced from the dark one, no light screenshot ; `UNSURE` = still a guess (iOS, light palette). The code lives in `DesignSystem/Tokens`, one comment per value carries the same tag. The warm dark palette replaces the iOS cool grey as the default dark palette (iOS included).
 
-### 8.1 Couleurs (sombre)
+### 8.1 Colours (dark)
 
-| Token | Hex | Cote | Usage |
+| Token | Hex | Grade | Usage |
 |-|-|-|-|
-| bgPrimary | #302C2A | MEASURED | fond de fenetre et de liste |
-| bgSidebar | #312D2C | MEASURED | fond de sidebar |
-| bgSidebarSelection | #3B3E42 | MEASURED | ligne selectionnee de la sidebar |
-| selectionRow | #393C3F | MEASURED | ligne selectionnee de la liste |
-| bgCalendarBox | #3F3B39 | MEASURED | boite des evenements du calendrier, pastille de date |
-| separator | #4F4B4A | MEASURED | filet sous un en-tete de section |
-| bgExpandedTodo | #3B3735 | ESTIMATED | carte du to-do ouvert |
-| textPrimary | #F4F2F0 | ESTIMATED | titres |
-| textSecondary | #8F8B89 | ESTIMATED | ligne de projet, icone de notes |
-| textPlaceholder | #77726F | ESTIMATED | "Notes", icones de la barre de la carte |
+| bgPrimary | #302C2A | MEASURED | window and list background |
+| bgSidebar | #312D2C | MEASURED | sidebar background |
+| bgSidebarSelection | #3B3E42 | MEASURED | selected sidebar row |
+| selectionRow | #393C3F | MEASURED | selected list row |
+| bgCalendarBox | #3F3B39 | MEASURED | calendar events box, date pill |
+| separator | #4F4B4A | MEASURED | 1 px rule under a section header |
+| bgExpandedTodo | #3B3735 | ESTIMATED | open to-do card |
+| textPrimary | #F4F2F0 | ESTIMATED | titles |
+| textSecondary | #8F8B89 | ESTIMATED | project row, notes icon |
+| textPlaceholder | #77726F | ESTIMATED | "Notes", card bar icons |
 | textMutedLink | #7A7674 | ESTIMATED | "Hide later items", "Show N logged items" |
-| checkboxBorder | #7C7875 | ESTIMATED | contour de la case |
-| tagPillBorder / tagPillText | #6A6664 / #9A9694 | ESTIMATED | pastille de tag (contour seul) |
-| chipFill / chipText | #8F8B89 / #2B2725 | ESTIMATED | pastille "All" selectionnee |
-| todayStar | #FFD60A | ESTIMATED | etoile |
-| eveningMoon | #A9B7F3 | ESTIMATED | lune de This Evening |
-| upcomingRed | #F0476B | ESTIMATED | icone calendrier |
-| anytimeTeal | #3BAFA8 | ESTIMATED | icone Anytime |
-| somedayTan | #DCC48C | ESTIMATED | icone Someday |
-| logbookGreen | #57C26A | ESTIMATED | icone Logbook |
-| areaTint | #7CCFAE | ESTIMATED | cube d'Area dans l'en-tete |
-| accent, deadlineFlame, filterBarGreen | inchanges | UNSURE | pas visibles sur les captures |
+| checkboxBorder | #7C7875 | ESTIMATED | checkbox stroke |
+| tagPillBorder / tagPillText | #6A6664 / #9A9694 | ESTIMATED | tag pill (stroke only) |
+| chipFill / chipText | #8F8B89 / #2B2725 | ESTIMATED | selected "All" pill |
+| todayStar | #FFD60A | ESTIMATED | star |
+| eveningMoon | #A9B7F3 | ESTIMATED | This Evening moon |
+| upcomingRed | #F0476B | ESTIMATED | calendar icon |
+| anytimeTeal | #3BAFA8 | ESTIMATED | Anytime icon |
+| somedayTan | #DCC48C | ESTIMATED | Someday icon |
+| logbookGreen | #57C26A | ESTIMATED | Logbook icon |
+| areaTint | #7CCFAE | ESTIMATED | Area cube in the header |
+| accent, deadlineFlame, filterBarGreen | unchanged | UNSURE | not visible in the screenshots |
 
-Variantes claires : `DERIVED` pour bgCalendarBox (#F1F1F3) et bgSidebarSelection (#DADDE3), `UNSURE` pour le reste (aucune capture claire).
+Light variants: `DERIVED` for bgCalendarBox (#F1F1F3) and bgSidebarSelection (#DADDE3), `UNSURE` for the rest (no light screenshot).
 
-### 8.2 Dimensions Mac (pt)
+### 8.2 Mac dimensions (pt)
 
-| Element | Valeur | Cote |
+| Element | Value | Grade |
 |-|-|-|
-| Hauteur de ligne, titre seul | 28 | MEASURED (pas entre lignes) |
-| Hauteur de ligne, titre + ligne de projet | 38 | MEASURED |
-| Case a cocher | 12, rayon 3, contour 1, centree verticalement dans la ligne | MEASURED taille, ESTIMATED rayon et contour |
-| Case Someday | contour en pointilles 2 / 2 | MEASURED (pointilles), ESTIMATED motif |
-| Gouttiere gauche | surbrillance a x = 0, case a x = 10 | MEASURED |
-| Case a titre | 9 (titre a x = 31 depuis le bord de la ligne) | MEASURED |
-| Rayon de la surbrillance | 6 continu | ESTIMATED |
-| Separateurs entre lignes | aucun | MEASURED |
-| Titre de to-do | 14 regular | ESTIMATED |
-| Ligne de projet | 12 regular, emoji inclus dans le texte | ESTIMATED |
-| Icone de notes apres le titre | 10, ecart 5 | MEASURED position, ESTIMATED taille |
-| Pastille de tag en ligne | contour 0,75, capsule 16 haut, texte 11 medium, 8 apres le titre | MEASURED hauteur, ESTIMATED reste |
-| Pastille de date ("Thu") | 16 haut, rayon 4, fond bgCalendarBox, texte 11 | MEASURED hauteur |
-| Titre de liste | 22 bold, icone 22, ecart 8, centre a y = 84 (barre d'outils 52) | MEASURED centre, ESTIMATED corps |
-| Titre au premier to-do | 27 (sans boite ni filtre) | MEASURED |
-| Boite d'evenements Today | 1000 x 66 pour 3 lignes, rayon 10, marge 12 / 9, pas 16, barre 3 x 11, texte 12 | MEASURED sauf rayon et texte (ESTIMATED) |
-| Titre a la boite / boite au filtre / filtre a la premiere ligne | 13 / 16 / 46 | MEASURED |
-| Pastille de filtre | 20 haut, texte 12 semibold, "All" = capsule pleine | MEASURED hauteur, ESTIMATED texte |
-| En-tete de section | icone 14, titre 14 bold a x = 31, filet 0,5 a 6 sous le texte, 7 de marge de chaque cote | MEASURED positions, ESTIMATED corps |
-| Espace avant un en-tete / filet a la premiere ligne | 40 / 9 | MEASURED (34 a 46 selon la ligne precedente) |
-| Carte ouverte | decalage 4 hors de la ligne, rayon 12, marge interne 14, haut 18, bas 19, zone de notes 60 mini | MEASURED sauf rayon (ESTIMATED) |
-| Barre de la carte | when a gauche a x = 35, 3 icones de 13 pt, pas 32, marge droite 28 | MEASURED |
-| Fil d'Ariane sous la carte | 12 semibold, aligne a 17 du bord droit de la carte, 17 sous la carte | MEASURED |
-| Ombre de la carte | rayon 12, y 3, noir a 30 % (sombre) | ESTIMATED (quasi invisible sur les captures) |
-| "Hide later items" | 12, 38 sous la derniere ligne, a x = 10 ; "Show N logged items" 23 plus bas | MEASURED |
-| Largeur de la sidebar | 302 | MEASURED (largeur de la capture, le code garde 240 ideal pour une fenetre normale) |
+| Row height, title alone | 28 | MEASURED (row pitch) |
+| Row height, title + project row | 38 | MEASURED |
+| Checkbox | 12, radius 3, 1 pt stroke, vertically centred in the row | MEASURED size, ESTIMATED radius and stroke |
+| Someday box | 2 / 2 dashed stroke | MEASURED (dashes), ESTIMATED pattern |
+| Left gutter | highlight at x = 0, box at x = 10 | MEASURED |
+| Box to title | 9 (title at x = 31 from the row edge) | MEASURED |
+| Highlight radius | 6 continuous | ESTIMATED |
+| Separators between rows | none | MEASURED |
+| To-do title | 14 regular | ESTIMATED |
+| Project row | 12 regular, emoji included in the text | ESTIMATED |
+| Notes icon after the title | 10, gap 5 | MEASURED position, ESTIMATED size |
+| Inline tag pill | 0.75 stroke, 16 high capsule, text 11 medium, 8 after the title | MEASURED height, ESTIMATED the rest |
+| Date pill ("Thu") | 16 high, radius 4, bgCalendarBox fill, text 11 | MEASURED height |
+| List title | 22 bold, icon 22, gap 8, centre at y = 84 (toolbar 52) | MEASURED centre, ESTIMATED body |
+| First to-do title | 27 (no box or filter) | MEASURED |
+| Today events box | 1000 x 66 for 3 rows, radius 10, margin 12 / 9, pitch 16, bar 3 x 11, text 12 | MEASURED except radius and text (ESTIMATED) |
+| Title to box / box to filter / filter to first row | 13 / 16 / 46 | MEASURED |
+| Filter pill | 20 high, text 12 semibold, "All" = filled capsule | MEASURED height, ESTIMATED text |
+| Section header | icon 14, title 14 bold at x = 31, 0.5 rule at 6 under the text, 7 margin on each side | MEASURED positions, ESTIMATED body |
+| Space before a header / rule to the first row | 40 / 9 | MEASURED (34 to 46 depending on the previous row) |
+| Open card | offset 4 outside the row, radius 12, inner margin 14, top 18, bottom 19, notes area 60 minimum | MEASURED except radius (ESTIMATED) |
+| Card bar | when on the left at x = 35, 3 icons of 13 pt, pitch 32, right margin 28 | MEASURED |
+| Breadcrumb under the card | 12 semibold, aligned 17 from the card's right edge, 17 under the card | MEASURED |
+| Card shadow | radius 12, y 3, black at 30 % (dark) | ESTIMATED (almost invisible in the screenshots) |
+| "Hide later items" | 12, 38 under the last row, at x = 10 ; "Show N logged items" 23 lower | MEASURED |
+| Sidebar width | 302 | MEASURED (the screenshot width, the code keeps 240 ideal for a normal window) |
 
-Valeurs de la spec d'origine rendues obsoletes par ce tableau : 4 (carte Mac : rayon 8, ombre y 2 flou 10), 3 (titre de liste Mac 26, titre de to-do 13), 4 (case Mac 16, hauteur de ligne 28 a 30, marge 20).
+Values from the original spec made obsolete by this table: 4 (Mac card: radius 8, shadow y 2 blur 10), 3 (Mac list title 26, to-do title 13), 4 (Mac checkbox 16, row height 28 to 30, margin 20).
 
-### 8.3 Animations de reordonnancement
+### 8.3 Reordering animations
 
-Pas dans les captures (statiques), donc `[PROPOSAL]` : levee de la ligne `scale 1,03` + ombre (ressort 0,2 / 0,75), autres lignes qui s'ecartent (`ThingsMotion.reorder`, ressort 0,28 / 0,8), echange clavier Cmd Opt fleche (`ThingsMotion.reorderSwap`, ressort 0,26 / 0,82), retour a la place en cas d'echec reseau.
+Not in the screenshots (static), therefore `[PROPOSAL]`: row lift `scale 1.03` + shadow (spring 0.2 / 0.75), other rows parting (`ThingsMotion.reorder`, spring 0.28 / 0.8), keyboard swap Cmd Opt arrow (`ThingsMotion.reorderSwap`, spring 0.26 / 0.82), return to place on a network failure.

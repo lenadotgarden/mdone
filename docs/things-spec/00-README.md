@@ -1,41 +1,41 @@
-# Spec Things 3 (Cultured Code) pour la refonte mDone
+# Things 3 spec (Cultured Code) for the mDone redesign
 
-Cible : ingénieurs SwiftUI qui n'ont jamais vu Things. Objectif : reproduire l'UI/UX de Things 3 trait pour trait (iPhone + macOS), l'app étant renommée et les icônes redessinées. Usage personnel.
+Target: SwiftUI engineers who have never seen Things. Goal: reproduce the UI/UX of Things 3 move for move (iPhone + macOS), with the app renamed and the icons redrawn. Personal use.
 
-Langue : français. Les termes et libellés d'UI de Things restent en anglais tels que l'app les affiche (Inbox, Today, This Evening, Upcoming, Anytime, Someday, Logbook, Magic Plus, Quick Entry, Quick Find, Type Travel, When, Deadline...).
+Language: English. Things UI terms and labels stay as the app displays them (Inbox, Today, This Evening, Upcoming, Anytime, Someday, Logbook, Magic Plus, Quick Entry, Quick Find, Type Travel, When, Deadline...).
 
-## Convention de fiabilité
+## Reliability convention
 
-Chaque affirmation non triviale porte une étiquette :
+Every non-trivial claim carries a tag:
 
-- `[VERIFIED url]` : lu sur la page citée (aspect textuel ; les valeurs visuelles exactes ne sont jamais données par Cultured Code).
-- `[FROM-MEMORY]` : connaissance de l'app, non revérifiable sans appareil. Fiable pour la structure et le comportement, approximative pour les pixels.
-- `[UNSURE]` : à valider avant de figer. Liste récapitulative en fin de ce fichier.
-- `[PROPOSAL]` : choix de conception de notre fork, pas un fait sur Things (surtout dans 01 pour les valeurs SwiftUI et dans 07).
+- `[VERIFIED url]`: read on the cited page (textual aspect; exact visual values are never given by Cultured Code).
+- `[FROM-MEMORY]`: knowledge of the app, not re-checkable without a device. Reliable for structure and behaviour, approximate for pixels.
+- `[UNSURE]`: to be validated before freezing. Recap list at the end of this file.
+- `[PROPOSAL]`: design choice of our fork, not a fact about Things (mostly in 01 for the SwiftUI values and in 07).
 
-Règle d'or : les valeurs en pixels, hex et durées de 01 sont des estimations `[FROM-MEMORY]` ou `[PROPOSAL]` sauf mention contraire. Cultured Code ne publie ni spécification visuelle ni code. Calibrer par comparaison visuelle avec des captures de l'app dès qu'un appareil est disponible.
+Golden rule: the pixel, hex and duration values in 01 are `[FROM-MEMORY]` or `[PROPOSAL]` estimates unless stated otherwise. Cultured Code publishes neither a visual spec nor code. Calibrate by visual comparison against screenshots of the app as soon as a device is available.
 
-## Fichiers
+## Files
 
-| Fichier | Contenu |
+| File | Content |
 |-|-|
-| 00-README.md | cet index, sources, [UNSURE] |
-| 01-design-tokens.md | couleurs, typo, espacements, rayons, icônes, haptique, animations |
-| 02-ios-screens.md | tous les écrans iPhone avec wireframes ASCII |
-| 03-ios-gestures.md | tous les gestes iOS et leur résultat exact |
-| 04-macos-screens.md | fenêtre Mac, Quick Entry, Quick Find, popovers, menus, préférences, drag and drop |
-| 05-macos-shortcuts.md | table complète des raccourcis clavier Mac (vérifiée) |
-| 06-behaviors-rules.md | règles sémantiques (listes, dates, répétition, Logbook, tags, textes vides) |
-| 07-vikunja-mapping.md | correspondance concepts Things vers Vikunja v2, écarts, conventions |
-| 08-drag-and-drop.md | modèle du glisser-déposer Mac : payload, slot d'insertion, plans, sidebar, accessibilité |
+| 00-README.md | this index, sources, [UNSURE] |
+| 01-design-tokens.md | colours, type, spacing, radii, icons, haptics, animations |
+| 02-ios-screens.md | every iPhone screen with ASCII wireframes |
+| 03-ios-gestures.md | every iOS gesture and its exact result |
+| 04-macos-screens.md | Mac window, Quick Entry, Quick Find, popovers, menus, preferences, drag and drop |
+| 05-macos-shortcuts.md | complete Mac keyboard shortcut table (verified) |
+| 06-behaviors-rules.md | semantic rules (lists, dates, repetition, Logbook, tags, empty states) |
+| 07-vikunja-mapping.md | how Things concepts map onto Vikunja v2, gaps, conventions |
+| 08-drag-and-drop.md | Mac drag and drop model: payload, insertion slot, planes, sidebar, accessibility |
 
 ## Sources
 
-Toutes lues le 2026-11-16 par `curl` (extraction texte du HTML).
+All read on 2026-11-16 with `curl` (text extraction from the HTML).
 
-Pages de support Cultured Code (base https://culturedcode.com/things/support/articles/) :
+Cultured Code support pages (base https://culturedcode.com/things/support/articles/):
 
-- 2785159 Keyboard Shortcuts for Mac (table complète, source de 05)
+- 2785159 Keyboard Shortcuts for Mac (complete table, source of 05)
 - 2803582 Using Gestures (iPhone, iPad, Vision)
 - 4001304 An In-Depth Look at Today, Upcoming, Anytime, and Someday
 - 2803579 Scheduling To-Dos in Things
@@ -51,27 +51,27 @@ Pages de support Cultured Code (base https://culturedcode.com/things/support/art
 - 8537373 Changing the Text Size
 - 2803566 Using the OS Share Feature
 - 2877019 Speaking to Siri ; 2157909 Using Things on Apple Watch
-- 1059358 Discover Great Features (index des articles)
+- 1059358 Discover Great Features (article index)
 
-Autres : https://culturedcode.com/things/features/ (page "What's new in the all-new Things" : Magic Plus, Jump Start, Quick Find, Type Travel, Slim Mode, progress pies, haptics, animations).
+Others: https://culturedcode.com/things/features/ (page "What's new in the all-new Things": Magic Plus, Jump Start, Quick Find, Type Travel, Slim Mode, progress pies, haptics, animations).
 
-Mémoire : connaissance générale de Things 3 pour iOS/macOS (jusqu'à fin 2025 environ). Les captures d'écran du site sont des vidéos, non exploitables ici : aucune valeur pixel n'a pu être mesurée.
+Memory: general knowledge of Things 3 for iOS/macOS (up to roughly the end of 2025). The screenshots on the site are videos, unusable here: no pixel value could be measured.
 
-Autres fichiers du repo consultés : `docs/vikunja-api-inventory.md` (API v2, minimum Vikunja 2.5.0).
+Other repo files consulted: `docs/vikunja-api-inventory.md` (v2 API, minimum Vikunja 2.5.0).
 
-## Contraintes de rédaction
+## Writing constraints
 
-Pas de tiret cadratin ni de double tiret : tiret simple uniquement. Les wireframes ASCII utilisent `|`, `+`, `_`, `=` pour les traits.
+No em dash and no doubled hyphen: single hyphen only. The ASCII wireframes use `|`, `+`, `_`, `=` for the lines.
 
-## Liste récapitulative des [UNSURE]
+## Recap list of [UNSURE]
 
-Voir la section "Récapitulatif [UNSURE]" à la fin de chaque fichier 01 à 07. Résumé des plus importants :
+See the "Recap of [UNSURE]" section at the end of each file from 01 to 07. Summary of the most important ones:
 
-1. Valeurs hex exactes de toutes les couleurs (01).
-2. Tailles et graisses exactes des titres de liste, en-têtes, notes (01).
-3. Hauteurs de ligne exactes, rayons de coins (01).
-4. Courbes et durées d'animations réelles (01).
-5. Textes exacts des états vides par liste (06).
-6. Position exacte des boutons de la barre du bas de l'écran Home iPhone (02).
-7. Ordre exact des actions dans les menus "..." (02).
-8. Comportement de l'ordre de Today dans Vikunja (07).
+1. Exact hex values of all the colours (01).
+2. Exact sizes and weights of list titles, headings, notes (01).
+3. Exact row heights, corner radii (01).
+4. Real animation curves and durations (01).
+5. Exact empty state texts per list (06).
+6. Exact position of the buttons in the bottom bar of the iPhone Home screen (02).
+7. Exact order of the actions in the "..." menus (02).
+8. Behaviour of the Today order in Vikunja (07).

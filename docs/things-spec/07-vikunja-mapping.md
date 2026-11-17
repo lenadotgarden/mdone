@@ -1,191 +1,191 @@
-# 07 - Correspondance Things vers Vikunja v2
+# 07 - Mapping Things to Vikunja v2
 
-Tout ce fichier est du `[PROPOSAL]` (conception de notre fork) appuyé sur les faits du modèle Vikunja. Faits Vikunja : `[VERIFIED docs/vikunja-api-inventory.md]` (repo mDone, API v2, serveur >= 2.5.0) ou `[FROM-MEMORY]` (modèle de données Vikunja connu : champs `start_date`, `end_date`, `due_date`, `reminders`, `repeat_after`, `repeat_mode`, `priority`, `position`, `related_tasks`, `labels`, `parent_project_id`, `done_at`). Valider chaque champ sur `/api/v2/openapi.json` avant de figer `[UNSURE]`.
+This whole file is `[PROPOSAL]` (design of our fork) backed by the facts of the Vikunja model. Vikunja facts: `[VERIFIED docs/vikunja-api-inventory.md]` (mDone repo, API v2, server >= 2.5.0) or `[FROM-MEMORY]` (known Vikunja data model: fields `start_date`, `end_date`, `due_date`, `reminders`, `repeat_after`, `repeat_mode`, `priority`, `position`, `related_tasks`, `labels`, `parent_project_id`, `done_at`). Validate every field against `/api/v2/openapi.json` before freezing `[UNSURE]`.
 
-Rappel Things : voir 06 pour la sémantique à reproduire.
+Things reminder: see 06 for the semantics to reproduce.
 
-## 1. Tableau de correspondance
+## 1. Mapping table
 
-| Concept Things | Vikunja | Écart / convention |
+| Things concept | Vikunja | Gap / convention |
 |-|-|-|
 | To-do | Task | direct |
-| Titre / Notes | `title` / `description` (Markdown, ou HTML selon le client) | Vikunja web écrit du HTML dans `description` ; notre app écrira du Markdown : voir §4 |
-| Inbox | projet "Inbox" (le projet par défaut de l'utilisateur, `default_project_id` du profil) `[FROM-MEMORY]` | convention : Inbox = ce projet ; un to-do sort de l'Inbox quand on le déplace dans un autre projet ou qu'on lui donne un When |
-| Area | projet de premier niveau marqué comme Area | pas de type "Area" dans Vikunja : voir §2 |
-| Project | projet enfant d'une Area, ou projet racine (= projet sans area) | direct via `parent_project_id` |
-| Sous-projet de projet | non existant dans Things | on ignore (profondeur max 2 : Area > Project) ; les projets Vikunja plus profonds s'affichent à plat `[PROPOSAL]` |
-| Heading | bucket d'une vue Kanban dédiée | voir §3 |
-| Checklist item | sous-tâche (relation `subtask`) | voir §5 |
-| When = date | `start_date` (date locale du jour de début) | voir §6 |
-| When = Today | `start_date` = aujourd'hui ou avant (mais voir §6) | Today est calculé, pas stocké |
-| When = This Evening | `start_date` + label réservé `things:evening` | voir §7 |
-| When = Someday | label réservé `things:someday` | voir §8 |
-| When = Anytime | `start_date` nul, pas de label Someday, dans un projet ou Area | calculé |
-| Reminder | `reminders[]` absolu (`reminder` datetime) | un seul reminder par to-do côté UI, comme Things |
+| Title / Notes | `title` / `description` (Markdown, or HTML depending on the client) | Vikunja web writes HTML into `description`; our app will write Markdown: see §4 |
+| Inbox | "Inbox" project (the user's default project, the profile's `default_project_id`) `[FROM-MEMORY]` | convention: Inbox = that project; a to-do leaves the Inbox when it is moved to another project or given a When |
+| Area | top-level project marked as an Area | no "Area" type in Vikunja: see §2 |
+| Project | child project of an Area, or root project (= project with no area) | direct via `parent_project_id` |
+| Sub-project of a project | does not exist in Things | ignored (max depth 2: Area > Project); deeper Vikunja projects are displayed flat `[PROPOSAL]` |
+| Heading | bucket of a dedicated Kanban view | see §3 |
+| Checklist item | sub-task (`subtask` relation) | see §5 |
+| When = date | `start_date` (local date of the start day) | see §6 |
+| When = Today | `start_date` = today or earlier (but see §6) | Today is computed, not stored |
+| When = This Evening | `start_date` + reserved label `things:evening` | see §7 |
+| When = Someday | reserved label `things:someday` | see §8 |
+| When = Anytime | null `start_date`, no Someday label, inside a project or Area | computed |
+| Reminder | absolute `reminders[]` (`reminder` datetime) | a single reminder per to-do in the UI, like Things |
 | Deadline | `due_date` | direct |
-| Repeat | `repeat_after` (secondes) + `repeat_mode` | écarts importants : voir §9 |
-| Tag | Label | pas de couleur côté Things ; ignorer `hex_color` à l'affichage `[PROPOSAL]` |
-| Tag imbriqué | aucune hiérarchie de labels | convention de nom "Parent/Enfant" `[PROPOSAL]` `[UNSURE]` |
-| Cancelled | `done = true` + label `things:cancelled` | voir §10 |
-| Logbook | `done = true` triés par `done_at` desc | direct |
-| Trash | non (2.8.0 a une corbeille serveur : `/tasks/deleted`, `/tasks/{id}/restore`) `[VERIFIED docs/vikunja-api-inventory.md]` | utiliser la corbeille serveur si version >= 2.8 |
-| Priority | `priority` 0-5 | n'existe pas dans Things : ne pas afficher ; la préserver à l'écriture (PATCH n'envoie que les champs modifiés) `[VERIFIED docs/vikunja-api-inventory.md]` |
-| Order dans une liste | `position` par vue (`PUT /tasks/{id}/position`, body `{position, project_view_id}`) `[VERIFIED docs/vikunja-api-inventory.md]` | voir §11 |
-| Project progress pie | calculé côté client (done / total) | pas de champ serveur |
-| Project notes | `description` du projet | direct |
-| Project deadline | pas de `due_date` projet | gap : voir §12 |
-| Project start date / Someday | pas de champ | gap : voir §12 |
-| Area notes / tags | `description` du projet ; tags : pas de labels sur projets | gap : voir §12 |
-| Archive (Logbook projet) | `is_archived = true` ou projet marqué done via label ? | voir §12 |
-| Calendar events | local EventKit, pas Vikunja | comme Things : lecture locale, aucune écriture `[VERIFIED 2803583]` |
+| Repeat | `repeat_after` (seconds) + `repeat_mode` | significant gaps: see §9 |
+| Tag | Label | no colour on the Things side; ignore `hex_color` when displaying `[PROPOSAL]` |
+| Nested tag | no label hierarchy | naming convention "Parent/Child" `[PROPOSAL]` `[UNSURE]` |
+| Cancelled | `done = true` + label `things:cancelled` | see §10 |
+| Logbook | `done = true` sorted by `done_at` desc | direct |
+| Trash | no (2.8.0 has a server trash: `/tasks/deleted`, `/tasks/{id}/restore`) `[VERIFIED docs/vikunja-api-inventory.md]` | use the server trash if version >= 2.8 |
+| Priority | `priority` 0-5 | does not exist in Things: do not display it; preserve it on write (PATCH only sends the changed fields) `[VERIFIED docs/vikunja-api-inventory.md]` |
+| Order within a list | `position` per view (`PUT /tasks/{id}/position`, body `{position, project_view_id}`) `[VERIFIED docs/vikunja-api-inventory.md]` | see §11 |
+| Project progress pie | computed client-side (done / total) | no server field |
+| Project notes | project `description` | direct |
+| Project deadline | no project `due_date` | gap: see §12 |
+| Project start date / Someday | no field | gap: see §12 |
+| Area notes / tags | project `description`; tags: no labels on projects | gap: see §12 |
+| Archive (project Logbook) | `is_archived = true` or project marked done via a label? | see §12 |
+| Calendar events | local EventKit, not Vikunja | like Things: local read, no write `[VERIFIED 2803583]` |
 
 ## 2. Areas
 
-Options évaluées :
+Options evaluated:
 
-1. Projet racine dont le titre est le nom de l'Area, avec un marqueur : description commençant par une ligne `things:area` (ligne simple), ou `hex_color` réservé, ou présence d'un label "things:area" (les labels ne s'appliquent pas aux projets : à exclure).
-2. Projet racine "Areas" qui contient les Areas comme enfants. Rejeté : ajoute un niveau parasite.
-3. Convention de structure : tout projet qui a des enfants = Area. Un projet sans enfant et sans parent = projet libre. Ambigu pour une Area vide.
+1. Root project whose title is the Area name, with a marker: description starting with a `things:area` line (plain line), or a reserved `hex_color`, or the presence of a "things:area" label (labels do not apply to projects: rule it out).
+2. Root project "Areas" holding the Areas as children. Rejected: adds a parasitic level.
+3. Structural convention: any project that has children = Area. A project with no child and no parent = free project. Ambiguous for an empty Area.
 
-Recommandation : option 1 avec marqueur dans `description` (première ligne `things:area`) car c'est le seul champ libre, qui survit à l'API et n'est pas visible dans le web Vikunja si placé dans un commentaire HTML. Une Area n'a pas de to-dos "propres" côté Vikunja, mais Things permet des to-dos libres dans une Area : ils vivent comme tâches directes de ce projet Area `[PROPOSAL]`. Risque : si l'Area est aussi un projet Vikunja normal, la web app permet d'y ajouter des tâches (ce qui est cohérent).
+Recommendation: option 1 with a marker in `description` (first line `things:area`), because it is the only free field, it survives the API and it is not visible in the Vikunja web when placed in an HTML comment. An Area has no to-dos of its own on the Vikunja side, but Things allows loose to-dos in an Area: they live as direct tasks of that Area project `[PROPOSAL]`. Risk: if the Area is also a normal Vikunja project, the web app lets you add tasks to it (which is consistent).
 
-Tradeoff : sans marqueur, un projet racine ordinaire qu'on crée dans la web app apparaît comme "projet libre" dans notre app (acceptable).
+Tradeoff: without a marker, an ordinary root project created in the web app shows up as a "free project" in our app (acceptable).
 
 ## 3. Headings
 
-Deux candidats :
+Two candidates:
 
 | Option | + | - |
 |-|-|-|
-| A. Buckets d'une vue Kanban `things-headings` | structure native, position par bucket, API présente (`/projects/{id}/views/{view}/buckets/tasks`, move card `PUT .../buckets/{bucket}/tasks`) `[VERIFIED docs/vikunja-api-inventory.md]`, visible dans la web app | une tâche = un bucket ; doit créer et maintenir une vue dédiée ; paging des buckets `[VERIFIED docs/vikunja-api-inventory.md]` ; ordre "to-dos hors heading" = bucket par défaut |
-| B. tâche factice avec label `things:heading` | simple, ordre unifié dans la vue liste | pollue les compteurs, apparaît dans la web app comme tâche, risque de complétion par erreur |
-| C. préfixe dans `description` de la tâche | aucune structure serveur | fragile |
+| A. Buckets of a Kanban view `things-headings` | native structure, position per bucket, API present (`/projects/{id}/views/{view}/buckets/tasks`, move card `PUT .../buckets/{bucket}/tasks`) `[VERIFIED docs/vikunja-api-inventory.md]`, visible in the web app | one task = one bucket; must create and maintain a dedicated view; paging of the buckets `[VERIFIED docs/vikunja-api-inventory.md]`; order of "to-dos outside a heading" = default bucket |
+| B. fake task with label `things:heading` | simple, unified order in the list view | pollutes counters, appears in the web app as a task, risk of completing it by mistake |
+| C. prefix in the task `description` | no server structure | fragile |
 
-Recommandation : A. Un projet Things avec headings reçoit une vue Kanban nommée `things-headings` créée au besoin ; le premier bucket (défaut) = "to-dos sans heading" (sans titre affiché) ; chaque autre bucket = un heading. Archiver un heading = marquer le bucket (nom préfixé `[archived]`) ou terminer ses tâches `[UNSURE]`. Si le projet n'a pas de headings, pas de vue supplémentaire à créer.
+Recommendation: A. A Things project with headings gets a Kanban view named `things-headings`, created as needed; the first bucket (default) = "to-dos without a heading" (no title displayed); every other bucket = a heading. Archiving a heading = marking the bucket (name prefixed `[archived]`) or completing its tasks `[UNSURE]`. If the project has no headings, no extra view to create.
 
-Ordre : le `position` des tâches dans la vue `things-headings` donne l'ordre intra-heading ; l'ordre des buckets donne l'ordre des headings `[UNSURE]` (champ `position` de bucket à vérifier).
+Order: the `position` of the tasks in the `things-headings` view gives the intra-heading order; the order of the buckets gives the order of the headings `[UNSURE]` (bucket `position` field to verify).
 
 ## 4. Notes
 
-Vikunja stocke `description` en HTML (éditeur Tiptap) dans le web ; le Markdown de Things n'y est pas natif. Choix : notre app stocke du Markdown brut ; la web app l'affichera comme texte. Si l'utilisateur édite aussi sur le web, la description devient HTML : l'app doit détecter (présence de balises) et afficher de façon tolérante ou convertir HTML vers Markdown `[PROPOSAL]` `[UNSURE]` (rendu exact de l'éditeur web).
+Vikunja stores `description` as HTML (Tiptap editor) in the web; Things' Markdown is not native there. Choice: our app stores raw Markdown; the web app will display it as text. If the user also edits on the web, the description becomes HTML: the app must detect it (presence of tags) and display it tolerantly or convert HTML to Markdown `[PROPOSAL]` `[UNSURE]` (exact rendering of the web editor).
 
 ## 5. Checklists
 
 | Option | + | - |
 |-|-|-|
-| A. sous-tâches (`related_tasks.subtask`, `POST /tasks/{id}/relations`) `[VERIFIED docs/vikunja-api-inventory.md]` | structure typée, cochables, ordre par `position` | chaque item est une vraie tâche : apparaît dans toutes listes si on n'exclut pas ; doit filtrer les tâches qui ont une relation `parenttask` hors des listes ; un appel par item |
-| B. cases Markdown `- [ ]` dans `description` | un seul PATCH, atomique, aucun filtrage | ne se synchronise pas proprement avec les sous-tâches Vikunja ; parsing à maintenir ; confusion avec notes Markdown |
+| A. sub-tasks (`related_tasks.subtask`, `POST /tasks/{id}/relations`) `[VERIFIED docs/vikunja-api-inventory.md]` | typed structure, tickable, order by `position` | each item is a real task: it appears in every list unless excluded; must filter out the tasks that have a `parenttask` relation; one call per item |
+| B. Markdown boxes `- [ ]` in `description` | a single PATCH, atomic, no filtering | does not sync cleanly with Vikunja sub-tasks; parsing to maintain; confusion with Markdown notes |
 
-Recommandation : A, avec filtre `expand=subtasks` pour ne ramener que les tâches de premier niveau `[VERIFIED docs/vikunja-api-inventory.md]`, et masquage de toute tâche qui a un parent. Les sous-tâches héritent du projet du parent. Things interdit dates/tags sur les items de checklist : ne pas les exposer `[VERIFIED features]` (les items sont de simples étapes).
+Recommendation: A, with an `expand=subtasks` filter to bring back only top-level tasks `[VERIFIED docs/vikunja-api-inventory.md]`, and hiding of any task that has a parent. Sub-tasks inherit the parent's project. Things forbids dates/tags on checklist items: do not expose them `[VERIFIED features]` (the items are plain steps).
 
-Si latence ou volume posent problème : repli B `[PROPOSAL]`.
+If latency or volume is a problem: fall back to B `[PROPOSAL]`.
 
-## 6. When = start_date, et "Today"
+## 6. When = start_date, and "Today"
 
-Vikunja distingue `start_date`, `end_date`, `due_date`, tous datetimes. Mappage :
+Vikunja distinguishes `start_date`, `end_date`, `due_date`, all datetimes. Mapping:
 
-- `start_date` = jour de début. Représentation : datetime à 12:00 locale du jour choisi, pour qu'un décalage de fuseau de moins de 12 h ne change pas le jour `[PROPOSAL]` `[UNSURE]` (alternative : 00:00 UTC + convention date flottante). Le jour est relu en fuseau local.
-- `end_date` : inutilisé par l'UI Things, à préserver tel quel.
-- `due_date` = Deadline, même représentation midi.
-- Today = tâches non faites avec `start_date <= fin de journée` OU `due_date <= fin de journée` (la deadline atteinte), hors Someday. Filtre Vikunja : `done = false && (start_date <= now || due_date <= now)` (syntaxe DSL à valider `[UNSURE]`) ; le plus sûr : télécharger et filtrer côté client `[PROPOSAL]`.
-- Upcoming = `start_date > fin de journée` ou `due_date > fin de journée` sans start date ; groupes calculés côté client.
-- Anytime = `start_date` nul, ni Someday ni Inbox.
-- Un to-do dans Today dont `start_date` est passé depuis plusieurs jours reste en Today (c'est le comportement Things aussi `[FROM-MEMORY]`).
-- Reminder : `reminders = [{reminder: <datetime absolu>}]` sur la tâche ; quand on définit un reminder, `start_date` du jour du reminder est posé aussi `[PROPOSAL]`. Un seul reminder maximum côté UI. Les `relative_to` de Vikunja (par rapport à due/start/end) ne sont pas utilisés.
-- Les reminders "début à 9:00" mettent le jour dans `start_date` et l'heure dans le reminder, pas dans `start_date`.
+- `start_date` = start day. Representation: datetime at 12:00 local of the chosen day, so that a timezone offset of less than 12 h does not change the day `[PROPOSAL]` `[UNSURE]` (alternative: 00:00 UTC + floating date convention). The day is read back in local time.
+- `end_date`: unused by the Things UI, preserve it as is.
+- `due_date` = Deadline, same noon representation.
+- Today = unfinished tasks with `start_date <= end of day` OR `due_date <= end of day` (the deadline reached), excluding Someday. Vikunja filter: `done = false && (start_date <= now || due_date <= now)` (DSL syntax to validate `[UNSURE]`); safest: download and filter client-side `[PROPOSAL]`.
+- Upcoming = `start_date > end of day` or `due_date > end of day` with no start date; groups computed client-side.
+- Anytime = null `start_date`, neither Someday nor Inbox.
+- A to-do in Today whose `start_date` has been past for several days stays in Today (this is Things behaviour too `[FROM-MEMORY]`).
+- Reminder: `reminders = [{reminder: <absolute datetime>}]` on the task; when a reminder is set, the `start_date` of the reminder day is set too `[PROPOSAL]`. At most one reminder in the UI. Vikunja's `relative_to` (relative to due/start/end) are not used.
+- "Start at 9:00" reminders put the day in `start_date` and the time in the reminder, not in `start_date`.
 
 ## 7. This Evening
 
-Aucun équivalent. Options :
+No equivalent. Options:
 
 | Option | + | - |
 |-|-|-|
-| A. label réservé `things:evening` | simple, lisible par les autres clients ; survit aux changements de date | visible dans les labels de la web app ; doit être caché dans notre UI ; nettoyage au passage de la journée |
-| B. heure sentinelle (ex. `start_date` à 18:00 local) | pas de label | entre en conflit avec les vrais horaires ; 12:00 est déjà utilisé comme "journée" ; fragile |
-| C. champ local uniquement | aucune pollution | perdu à la synchro ; non cohérent multi-appareils |
+| A. reserved label `things:evening` | simple, readable by other clients; survives date changes | visible in the web app labels; must be hidden in our UI; cleanup as the day passes |
+| B. sentinel time (e.g. `start_date` at 18:00 local) | no label | conflicts with real times; 12:00 is already used as "the day"; fragile |
+| C. local field only | no pollution | lost on sync; not consistent across devices |
 
-Recommandation : A. Règle : `things:evening` n'a de sens que si `start_date` est posée (jour). Effacer le When retire le label. Today affiche en section This Evening les tâches Today portant ce label. À minuit, le label reste valable pour un jour futur (cf. 06 §4) `[UNSURE]`.
+Recommendation: A. Rule: `things:evening` only makes sense if `start_date` is set (day). Clearing the When removes the label. Today shows in a This Evening section the Today tasks carrying that label. At midnight, the label stays valid for a future day (cf. 06 §4) `[UNSURE]`.
 
 ## 8. Someday
 
-- Label réservé `things:someday` (A) ; une tâche Someday n'a pas de `start_date` (sinon contradiction : le label gagne et on ignore `start_date`).
-- Variante B : projet "Someday" dédié : perd la place dans l'Area/projet d'origine. Rejetée.
-- Projet Someday : voir §12.
+- Reserved label `things:someday` (A); a Someday task has no `start_date` (otherwise contradiction: the label wins and `start_date` is ignored).
+- Variant B: dedicated "Someday" project: loses its place in the original Area/project. Rejected.
+- Someday project: see §12.
 
-## 9. Répétition
+## 9. Repetition
 
-Champs Vikunja : `repeat_after` (secondes) et `repeat_mode` : 0 = intervalle fixe depuis la `due_date`, 1 = mensuel (même jour du mois), 2 = depuis la date de complétion (`from current date`) `[FROM-MEMORY]` `[UNSURE]` (à valider). Vikunja ne crée pas de copie : à la complétion, la même tâche est remise à `done = false` avec dates avancées (le PATCH `done: true` "rolls the due date forward" `[VERIFIED docs/vikunja-api-inventory.md]`).
+Vikunja fields: `repeat_after` (seconds) and `repeat_mode`: 0 = fixed interval from `due_date`, 1 = monthly (same day of the month), 2 = from the completion date (`from current date`) `[FROM-MEMORY]` `[UNSURE]` (to validate). Vikunja does not create a copy: on completion, the same task is set back to `done = false` with advanced dates (the `done: true` PATCH "rolls the due date forward" `[VERIFIED docs/vikunja-api-inventory.md]`).
 
-| Fonction Things | Faisable ? |
+| Things feature | Feasible? |
 |-|-|
-| After completion | oui : `repeat_mode = 2` |
-| Regular daily/weekly | oui : `repeat_mode = 0`, `repeat_after = 86400*n` ou `604800*n` |
-| Regular monthly | oui : `repeat_mode = 1` (1 mois) ; pas "tous les 2 mois" `[UNSURE]` |
-| Yearly | `repeat_after = 31536000` approximatif ; dérive sur années bissextiles |
-| Jours précis (lun-ven, 3e mardi) | non : gap |
-| Date de fin | non : gap (peut se gérer côté app en arrêtant la répétition) |
-| Template + copies | non : une seule tâche ; la notion de "copie" disparaît ; la liste Repeating = tâches avec `repeat_after > 0` |
-| Pause / Resume | non : simuler en mettant `repeat_after = 0` et en sauvegardant l'ancien dans un label/description `[UNSURE]` |
-| Deadlines "days earlier" | partiellement : écart `start_date` vs `due_date` conservé à l'avancement `[UNSURE]` |
+| After completion | yes: `repeat_mode = 2` |
+| Regular daily/weekly | yes: `repeat_mode = 0`, `repeat_after = 86400*n` or `604800*n` |
+| Regular monthly | yes: `repeat_mode = 1` (1 month); no "every 2 months" `[UNSURE]` |
+| Yearly | `repeat_after = 31536000` approximate; drifts over leap years |
+| Specific days (Mon-Fri, 3rd Tuesday) | no: gap |
+| End date | no: gap (can be handled app-side by stopping the repetition) |
+| Template + copies | no: a single task; the notion of "copy" disappears; the Repeating list = tasks with `repeat_after > 0` |
+| Pause / Resume | no: simulate by setting `repeat_after = 0` and saving the old value in a label/description `[UNSURE]` |
+| "days earlier" deadlines | partially: the `start_date` vs `due_date` gap is kept as dates advance `[UNSURE]` |
 
-Recommandation : exposer d'abord After completion + Daily/Weekly/Monthly/Yearly simples ; masquer le reste ; documenter les écarts dans l'UI. Toute règle plus riche = convention app-side dans `description` (bloc `things:repeat {...}`) `[PROPOSAL]` non recommandé pour v1.
+Recommendation: expose After completion + simple Daily/Weekly/Monthly/Yearly first; hide the rest; document the gaps in the UI. Any richer rule = app-side convention in `description` (block `things:repeat {...}`) `[PROPOSAL]`, not recommended for v1.
 
 ## 10. Cancelled
 
-Vikunja n'a pas de statut annulé. Convention : `done = true` + label `things:cancelled`. Affichage Logbook : croix au lieu de coche. Retirer le label si on "uncancel".
+Vikunja has no cancelled status. Convention: `done = true` + label `things:cancelled`. Logbook display: a cross instead of a tick. Remove the label when "uncancelling".
 
-## 11. Ordre (position)
+## 11. Order (position)
 
-- Vikunja tient une `position` par (tâche, vue). Chaque projet a des vues (liste, Kanban...) `[VERIFIED docs/vikunja-api-inventory.md]` (`/projects/{id}/views`).
-- Listes Things "intrinsèques" au projet (le projet lui-même, une Area) : utiliser la vue Liste du projet pour `position`.
-- Listes transverses (Today, Upcoming, Anytime, Someday, Inbox) : Things stocke un ordre global par liste. Vikunja n'a pas de vue pour cela. Options : (1) utiliser la `position` de la vue Liste du projet d'origine (l'ordre de Today suivra l'ordre dans leur projet respectif : acceptable pour un MVP), (2) créer des "saved filters" Vikunja (pseudo-projets, ids négatifs) `[VERIFIED docs/vikunja-api-inventory.md]` pour Today/Anytime et utiliser leurs vues pour la position `[UNSURE]` (positions de saved filters), (3) ordre local seulement (non synchronisé). Recommandation : (1) pour v1 ; Inbox = projet Inbox donc position native.
+- Vikunja holds a `position` per (task, view). Each project has views (list, Kanban...) `[VERIFIED docs/vikunja-api-inventory.md]` (`/projects/{id}/views`).
+- Things lists that are "intrinsic" to the project (the project itself, an Area): use the project's List view for `position`.
+- Cross-cutting lists (Today, Upcoming, Anytime, Someday, Inbox): Things stores a global order per list. Vikunja has no view for that. Options: (1) use the `position` of the List view of the original project (the order of Today then follows the order in each respective project: acceptable for an MVP), (2) create Vikunja "saved filters" (pseudo-projects, negative ids) `[VERIFIED docs/vikunja-api-inventory.md]` for Today/Anytime and use their views for the position `[UNSURE]` (positions of saved filters), (3) local order only (not synchronized). Recommendation: (1) for v1; Inbox = Inbox project so native position.
 
-## 12. Écarts non résolus pour projets et areas
+## 12. Unresolved gaps for projects and areas
 
-| Besoin Things | Contournement |
+| Things need | Workaround |
 |-|-|
-| Tags sur projet/area | label non applicable à un projet : stocker la liste de tags dans `description` en première ligne `things:tags a,b` `[PROPOSAL]` `[UNSURE]` ; hérités à l'exécution par l'app |
-| Deadline / start date de projet | idem : `things:deadline YYYY-MM-DD`, `things:start YYYY-MM-DD` en tête de description ; ou ignorer |
-| Projet Someday | `things:someday` dans la description du projet |
-| Projet complété (Logbook) | `is_archived = true` (le serveur le sort des listes) + date dans `things:completed` ; ou terminer toutes ses tâches. `GET /projects` avec `is_archived=true` renvoie actifs et archivés `[VERIFIED docs/vikunja-api-inventory.md]` |
-| Projet annulé | archivé + `things:cancelled` |
-| Projet répétitif | gap : ne pas supporter en v1 |
-| Pie | calculé : done / total de ses tâches (hors sous-tâches) |
+| Tags on project/area | label not applicable to a project: store the tag list in `description` on the first line `things:tags a,b` `[PROPOSAL]` `[UNSURE]`; inherited at runtime by the app |
+| Project deadline / start date | same: `things:deadline YYYY-MM-DD`, `things:start YYYY-MM-DD` at the top of the description; or ignore |
+| Someday project | `things:someday` in the project description |
+| Completed project (Logbook) | `is_archived = true` (the server takes it out of the lists) + date in `things:completed`; or complete all its tasks. `GET /projects` with `is_archived=true` returns both active and archived `[VERIFIED docs/vikunja-api-inventory.md]` |
+| Cancelled project | archived + `things:cancelled` |
+| Repeating project | gap: not supported in v1 |
+| Pie | computed: done / total of its tasks (excluding sub-tasks) |
 
-Cette dépendance au champ `description` du projet doit être encapsulée dans un seul module (`ProjectMetaCodec`) qui lit et écrit un bloc de lignes en tête et préserve le reste du texte.
+This dependency on the project `description` field must be encapsulated in a single module (`ProjectMetaCodec`) that reads and writes a block of lines at the top and preserves the rest of the text.
 
 ## 13. Tags (labels)
 
-- Tag Things = Label Vikunja. API : `GET/POST /labels`, `POST/DELETE /tasks/{id}/labels` `[VERIFIED docs/vikunja-api-inventory.md]`.
-- Tags réservés app-side : préfixe `things:` (evening, someday, cancelled) : à masquer de tous les écrans de tags, du filtre et de la recherche.
-- Raccourcis de tags par lettre (Mac) : stockage local.
-- Ordre des tags : local (Vikunja n'a pas d'ordre de labels).
-- Tags hérités par la liste : calcul app-side, pas d'écriture sur les tâches `[VERIFIED 2803581]` (ne pas matérialiser).
+- Things tag = Vikunja label. API: `GET/POST /labels`, `POST/DELETE /tasks/{id}/labels` `[VERIFIED docs/vikunja-api-inventory.md]`.
+- App-side reserved tags: `things:` prefix (evening, someday, cancelled): to hide from every tag screen, from the filter and from search.
+- Per-letter tag shortcuts (Mac): local storage.
+- Tag order: local (Vikunja has no label order).
+- Tags inherited by the list: computed app-side, no write on the tasks `[VERIFIED 2803581]` (do not materialize them).
 
 ## 14. Quick Entry / Inbox / Share
 
-- Création : `POST /projects/{inboxId}/tasks` `[VERIFIED docs/vikunja-api-inventory.md]`.
-- Création directe dans un projet : `POST /projects/{id}/tasks`.
-- Magic Plus dans une liste temporelle : crée dans le projet Inbox (ou parent contextuel) puis `PATCH` avec `start_date` si Today/Upcoming.
-- Déplacement : `PATCH` du `project_id`.
+- Creation: `POST /projects/{inboxId}/tasks` `[VERIFIED docs/vikunja-api-inventory.md]`.
+- Direct creation in a project: `POST /projects/{id}/tasks`.
+- Magic Plus in a time-based list: creates in the Inbox project (or the contextual parent) then `PATCH` with `start_date` if Today/Upcoming.
+- Move: `PATCH` of `project_id`.
 
-## 15. Mises à jour atomiques
+## 15. Atomic updates
 
-Toujours `PATCH /tasks/{id}` avec les seuls champs modifiés (mDone le fait déjà : #292) `[VERIFIED docs/vikunja-api-inventory.md]`. Effacer une date = `null`. Les tableaux (`labels`, `reminders`) remplacent la liste entière : lors d'un changement d'un seul label réservé, relire les labels pour ne pas écraser `[VERIFIED docs/vikunja-api-inventory.md]` (labels passent par `/tasks/{id}/labels` plutôt que PATCH).
+Always `PATCH /tasks/{id}` with only the changed fields (mDone already does this: #292) `[VERIFIED docs/vikunja-api-inventory.md]`. Clearing a date = `null`. Arrays (`labels`, `reminders`) replace the whole list: when a single reserved label changes, read the labels back so as not to overwrite `[VERIFIED docs/vikunja-api-inventory.md]` (labels go through `/tasks/{id}/labels` rather than PATCH).
 
-## 16. Récapitulatif des conventions réservées
+## 16. Summary of the reserved conventions
 
-| Marqueur | Emplacement | Sens |
+| Marker | Location | Meaning |
 |-|-|-|
-| `things:evening` | label de tâche | This Evening |
-| `things:someday` | label de tâche | Someday |
-| `things:cancelled` | label de tâche | annulée (avec done) |
-| `things:area` | première ligne de `description` de projet | cet élément est une Area |
-| `things:tags`, `things:deadline`, `things:start`, `things:someday`, `things:completed`, `things:cancelled` | lignes en tête de `description` de projet | métadonnées de projet |
-| vue `things-headings` | vue Kanban du projet | headings = buckets |
-| projet Inbox | `default_project_id` du profil, sinon projet nommé Inbox | Inbox |
-| `start_date` / `due_date` à 12:00 locale | tâche | dates plein jour |
+| `things:evening` | task label | This Evening |
+| `things:someday` | task label | Someday |
+| `things:cancelled` | task label | cancelled (with done) |
+| `things:area` | first line of the project `description` | this element is an Area |
+| `things:tags`, `things:deadline`, `things:start`, `things:someday`, `things:completed`, `things:cancelled` | lines at the top of the project `description` | project metadata |
+| `things-headings` view | Kanban view of the project | headings = buckets |
+| Inbox project | profile `default_project_id`, otherwise a project named Inbox | Inbox |
+| `start_date` / `due_date` at 12:00 local | task | full-day dates |
 
-## Récapitulatif [UNSURE]
+## Summary [UNSURE]
 
-Valeurs exactes de `repeat_mode` ; formats de filtre pour Today ; ordre des buckets (`position`) ; position dans saved filters ; HTML vs Markdown dans `description` ; mois/années non standard ; représentation midi des dates ; hiérarchie de tags ; existence et nom du projet Inbox par défaut selon la version serveur ; sémantique d'un heading archivé.
+Exact values of `repeat_mode`; filter formats for Today; order of the buckets (`position`); position in saved filters; HTML vs Markdown in `description`; non-standard months/years; noon representation of dates; tag hierarchy; existence and name of the default Inbox project depending on the server version; semantics of an archived heading.

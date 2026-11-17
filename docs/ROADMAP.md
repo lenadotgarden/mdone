@@ -1,40 +1,40 @@
 # Roadmap
 
-Statut : `[ ]` à faire, `[~]` en cours, `[x]` fait. Chaque jalon est validé par la CI macOS avant le suivant. Tout le code Things a été écrit sans compilateur : `[x]` ne veut dire "fait" que pour ce qui est vert en CI.
+Status: `[ ]` to do, `[~]` in progress, `[x]` done. Each milestone is validated by the macOS CI before the next one. All the Things code was written without a compiler: `[x]` only means "done" for what is green in CI.
 
-## Phase 0 - Fondations
-- [x] Fork, spec Things (`docs/things-spec/`), audit (`docs/architecture-audit/`)
-- [x] ARCHITECTURE.md, CI de compilation rapide (ci-build.yml), script de couches (`scripts/check-layering.sh`, avertissements seulement tant que les violations d'avant le fork ne sont pas résolues)
-- [x] Étapes 1 à 4 du plan de déplacement (CI iOS + macOS verte sur f858e26)
-- [ ] Étapes 5 à 9 (Domain extrait, AppState éclaté, préférences typées)
+## Phase 0 - Foundations
+- [x] Fork, Things spec (`docs/things-spec/`), audit (`docs/architecture-audit/`)
+- [x] ARCHITECTURE.md, fast build CI (ci-build.yml), layering script (`scripts/check-layering.sh`, warnings only until the violations from before the fork are resolved)
+- [x] Steps 1 to 4 of the move plan (iOS + macOS CI green on f858e26)
+- [ ] Steps 5 to 9 (Domain extracted, AppState split, typed preferences)
 
-## Phase 1 - Domain Things (testé en CI, sans UI)
-- [x] Mapping Vikunja (Domain/Mapping, tests verts en CI)
-- [x] Listes Inbox, Today, Upcoming, Anytime, Someday, Logbook (tests verts en CI)
-- [~] Arbre de projets et Areas, cibles de déplacement, charge utile de glisser-déposer (`ThingsProjectTree`, `ThingsMoveTargets`, `ThingsDragPayload`), langage naturel (`ThingsNaturalLanguage`) : écrits avec tests, non validés par la CI
-- [ ] Répétition (fixe / après complétion), rappels
+## Phase 1 - Things Domain (tested in CI, no UI)
+- [x] Vikunja mapping (Domain/Mapping, tests green in CI)
+- [x] Inbox, Today, Upcoming, Anytime, Someday, Logbook lists (tests green in CI)
+- [~] Project tree and Areas, move targets, drag and drop payload (`ThingsProjectTree`, `ThingsMoveTargets`, `ThingsDragPayload`), natural language (`ThingsNaturalLanguage`): written with tests, not validated by the CI
+- [ ] Repetition (fixed / after completion), reminders
 
 ## Phase 2 - DesignSystem
-- [~] Tokens (valeurs à calibrer sur captures réelles ; palette sombre chaude, `ThingsMetrics.Sidebar`)
-- [~] Composants écrits, previews à valider, Magic Plus (tap seulement)
+- [~] Tokens (values to calibrate against real screenshots; warm dark palette, `ThingsMetrics.Sidebar`)
+- [~] Components written, previews to validate, Magic Plus (tap only)
 
 ## Phase 3 - iPhone
-- [~] Home, Today, Upcoming, Anytime, Someday, Logbook, Area, Project (écrits, non validés par la CI : projet/area à plat sans headings)
-- [ ] To-do déployé, pickers When/Deadline/Tags, Move, Quick Find
-- [~] Gestes : swipe droit When, tap Magic Plus, secousse (undo) faits ; drag, Magic Plus glissé, multi-sélection restent à faire
+- [~] Home, Today, Upcoming, Anytime, Someday, Logbook, Area, Project (written, not validated by the CI: project/area flat, without headings)
+- [ ] Expanded to-do, When/Deadline/Tags pickers, Move, Quick Find
+- [~] Gestures: swipe right for When, Magic Plus tap, shake (undo) done; drag, Magic Plus dragging and multi-selection still to do
 
 ## Phase 4 - Mac
-- [~] Fenêtre, sidebar en arbre, listes, éditeur déployé, popovers When, Deadline, Tags, Move (écrits, non validés par la CI ni sur un Mac)
-- [~] Quick Entry (panneau, moniteur global sous réserve d'accès Accessibilité), Quick Find (carte en surimpression), Type Travel : écrits, non validés
-- [~] Raccourcis : table testée (`ThingsShortcutTable`), commandes de menu écrites ; reste listé dans DEVIATIONS.md
-- [~] Réordonnancement et glisser-déposer (liste, sidebar) : voir DEVIATIONS.md, lot en cours
+- [~] Window, tree sidebar, lists, expanded editor, popovers for When, Deadline, Tags, Move (written, not validated by the CI nor on a Mac)
+- [~] Quick Entry (panel, global monitor subject to Accessibility access), Quick Find (overlay card), Type Travel: written, not validated
+- [~] Shortcuts: tested table (`ThingsShortcutTable`), menu commands written; what remains is listed in DEVIATIONS.md
+- [~] Reordering and drag and drop (list, sidebar): see DEVIATIONS.md, batch in progress
 
-## Phase 5 - Fonctions mDone dans le style Things
-- [~] Langage naturel (anglais et français, actif par défaut) fait côté Things
-- [ ] Focus, retard, durée estimée, calendrier amélioré, kanban, widgets, Siri dans le style Things
+## Phase 5 - mDone features in the Things style
+- [~] Natural language (English and French, on by default) done on the Things side
+- [ ] Focus, postponing, estimated duration, improved calendar, kanban, widgets, Siri in the Things style
 
-## Transverse
-- [x] Français pour tous les textes Things (`localization/fr.json`, `scripts/check-things-localization.py`) ; le reste de l'app reste en anglais et en chinois simplifié
-- [ ] Swift 6 : le projet reste en Swift 5.9 ; les fichiers Things ont été relus (WIRING-AGENT-B.md), un avertissement de `mDoneApp.swift` reste
+## Cross-cutting
+- [x] French for all Things strings (`localization/fr.json`, `scripts/check-things-localization.py`); the rest of the app stays in English and Simplified Chinese
+- [ ] Swift 6: the project stays on Swift 5.9; the Things files were re-read (WIRING-AGENT-B.md), one warning from `mDoneApp.swift` remains
 
 ## Phase 6 - iPad

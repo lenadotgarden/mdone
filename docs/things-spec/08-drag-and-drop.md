@@ -1,95 +1,95 @@
-# 08 Glisser-déposer (Mac)
+# 08 Drag and drop (Mac)
 
-Un seul système, celui de macOS (`onDrag` et `DropDelegate`), pour deux usages : **ordonner** les to-dos dans une liste, et **déposer** un to-do ou un projet sur une ligne de la sidebar. Complète `04-macos-screens.md` section 10 (tableau des sources et cibles de Things).
+A single system, the macOS one (`onDrag` and `DropDelegate`), for two uses: **ordering** to-dos within a list, and **dropping** a to-do or a project onto a sidebar row. Complements `04-macos-screens.md` section 10 (table of Things sources and targets).
 
-Code écrit sans compilateur, à valider par la CI macOS puis sur un Mac.
+Code written without a compiler, to be validated by the macOS CI then on a Mac.
 
-## 1. Modèle
+## 1. Model
 
 ```
-Source                         Payload                      Cibles
-ligne de to-do (liste)   ->    ThingsDragPayload.todo(id)   -> la liste elle-même (ordre, section)
-                                                            -> ligne de sidebar (projet, Area, Inbox, Today, Someday)
-ligne de projet/Area     ->    ThingsDragPayload.project(id)-> ligne de sidebar (projet, Area)
+Source                         Payload                      Targets
+to-do row (list)         ->    ThingsDragPayload.todo(id)   -> the list itself (order, section)
+                                                            -> sidebar row (project, Area, Inbox, Today, Someday)
+project/Area row         ->    ThingsDragPayload.project(id)-> sidebar row (project, Area)
 (sidebar)
 ```
 
-Le payload est une chaîne (`mdone-todo:42`, `mdone-project:7`) écrite dans le presse-papier de drag comme texte brut : aucun UTType à déclarer. Les deux sources passent par `ThingsDragItem.provider(for:)`, toutes les cibles acceptent `ThingsDragItem.contentTypes`. C'est ce qui garantit que le type est identique partout.
+The payload is a string (`mdone-todo:42`, `mdone-project:7`) written into the drag pasteboard as plain text: no UTType to declare. Both sources go through `ThingsDragItem.provider(for:)`, all targets accept `ThingsDragItem.contentTypes`. That is what guarantees the type is the same everywhere.
 
-### Modules (`Features/Things/`, purs sauf mention)
+### Modules (`Features/Things/`, pure unless mentioned)
 
-| Fichier | Contenu |
+| File | Content |
 |-|-|
-| `Domain/Mapping/ThingsDragPayload.swift` | `ThingsDragPayload` (`todo`, `project`, `todoID`, `projectID`, encodage). |
-| `ThingsDragDrop.swift` | `ThingsDropTarget` (liste ou projet de la sidebar), `ThingsDropAction`, `ThingsDropFacts`, `ThingsDropResolver` (que fait un drop sur une ligne de sidebar), `ThingsSectionID`, `ThingsDropRules` (quels changements de section ont un sens). |
-| `ThingsDropGeometry.swift` | `ThingsDropSlot` (point d'insertion), `ThingsDropGeometry.slot` (pointeur Y et frames des lignes vers slot), `shift` (de combien chaque ligne glisse). Aucune valeur de mise en page : le nombre de points vient des frames. |
-| `ThingsDropPlan.swift` | `ThingsDropPlan` (`reorder` ou `changeSection`), `make(slot:movingID:sections:)`, `overrides`, `ThingsDropArrangement` (ordre optimiste, d'une section à l'autre). |
-| `ThingsDragItem.swift` | `NSItemProvider` et lecture asynchrone du payload (Foundation et UniformTypeIdentifiers seulement). |
-| `ThingsListViewModel+Reorder.swift` | `ThingsReorder` (inchangé), `commitReorder`, `commitDrop`. |
+| `Domain/Mapping/ThingsDragPayload.swift` | `ThingsDragPayload` (`todo`, `project`, `todoID`, `projectID`, encoding). |
+| `ThingsDragDrop.swift` | `ThingsDropTarget` (list or sidebar project), `ThingsDropAction`, `ThingsDropFacts`, `ThingsDropResolver` (what a drop on a sidebar row does), `ThingsSectionID`, `ThingsDropRules` (which section changes make sense). |
+| `ThingsDropGeometry.swift` | `ThingsDropSlot` (insertion point), `ThingsDropGeometry.slot` (Y pointer and row frames to slot), `shift` (how far each row slides). No layout value: the number of points comes from the frames. |
+| `ThingsDropPlan.swift` | `ThingsDropPlan` (`reorder` or `changeSection`), `make(slot:movingID:sections:)`, `overrides`, `ThingsDropArrangement` (optimistic order, from one section to another). |
+| `ThingsDragItem.swift` | `NSItemProvider` and asynchronous reading of the payload (Foundation and UniformTypeIdentifiers only). |
+| `ThingsListViewModel+Reorder.swift` | `ThingsReorder` (unchanged), `commitReorder`, `commitDrop`. |
 | `Platform/macOS/ThingsMacDragDrop.swift` | `ThingsDragSession`, `ThingsListDropDelegate`, `ThingsSidebarDropDelegate`, `ThingsSidebarDragSource`. |
-| `Platform/macOS/ThingsMacTodoList.swift` | Source de drag sur chaque ligne, un seul `DropDelegate` pour toute la liste, animation de l'écart. |
-| `Platform/macOS/ThingsMacSidebar.swift` | Une cible par ligne, surbrillance, source de drag des projets et Areas. |
-| `Platform/macOS/ThingsMacModel+Actions.swift` | `dropAction(for:on:)` (lit l'état, appelle le resolver) et `handleDrop(_:on:)` (exécute). |
+| `Platform/macOS/ThingsMacTodoList.swift` | Drag source on each row, a single `DropDelegate` for the whole list, animation of the gap. |
+| `Platform/macOS/ThingsMacSidebar.swift` | One target per row, highlight, drag source for projects and Areas. |
+| `Platform/macOS/ThingsMacModel+Actions.swift` | `dropAction(for:on:)` (reads the state, calls the resolver) and `handleDrop(_:on:)` (executes). |
 
-Tokens : `ThingsMotion.reorder` (ressort de l'écart qui s'ouvre et se ferme, du glissement des lignes et du retour), `ThingsMotion.reorderSwap` (clavier), `ThingsMotion.dropTargetHighlight` (surbrillance d'une ligne de sidebar), `ThingsMetrics.Reorder.*` (ombre de l'image de drag, hauteur d'écart de secours), `ThingsMetrics.Card.cornerRadius`, `ThingsColorOpacity.liftShadow`.
+Tokens: `ThingsMotion.reorder` (spring of the gap opening and closing, of the row sliding and of the return), `ThingsMotion.reorderSwap` (keyboard), `ThingsMotion.dropTargetHighlight` (sidebar row highlight), `ThingsMetrics.Reorder.*` (drag image shadow, fallback gap height), `ThingsMetrics.Card.cornerRadius`, `ThingsColorOpacity.liftShadow`.
 
-## 2. Ordonner dans la liste
+## 2. Ordering within the list
 
-1. Le drag démarre au mouvement de la souris (seuil du système). La ligne est sélectionnée, un retour haptique est donné, et l'image du drag est la ligne sur une carte avec l'ombre de soulèvement.
-2. Toute la liste est une cible. À chaque `dropEntered` et `dropUpdated`, `ThingsDropGeometry.slot` calcule le slot : au-dessus de la première ligne dont le milieu est sous le pointeur, ou sous la dernière. Entre deux sections (zone de l'en-tête), le côté le plus proche gagne.
-3. Pendant que le pointeur est dans la liste, la ligne source est masquée, les lignes entre l'ancienne et la nouvelle place glissent d'une hauteur de ligne (ressort `reorder`) : l'écart s'ouvre là où le to-do atterrira et se ferme là où il était. `dropExited` remet le slot à nil, tout revient, la ligne source réapparaît (un drag annulé ne laisse donc rien de masqué).
-4. `performDrop` construit un `ThingsDropPlan` et le valide, applique l'ordre optimiste (`orderOverride`, avec animation), puis `ThingsListViewModel.commitDrop` envoie `AppState.moveTask(_:toPosition:)`. La position vient de `TaskPositioning` (mêmes règles que le web Vikunja). Quand le serveur répond, l'ordre optimiste est retiré. Si l'envoi a échoué, les lignes reviennent à leur place (rollback).
-5. Un drop qui ne change rien renvoie `false` : le système ramène l'image à la ligne.
+1. The drag starts on mouse movement (system threshold). The row is selected, haptic feedback is given, and the drag image is the row on a card with the lift shadow.
+2. The whole list is a target. On each `dropEntered` and `dropUpdated`, `ThingsDropGeometry.slot` computes the slot: above the first row whose middle is below the pointer, or below the last one. Between two sections (header area), the nearest side wins.
+3. While the pointer is in the list, the source row is hidden, the rows between the old and the new place slide by one row height (`reorder` spring): the gap opens where the to-do will land and closes where it was. `dropExited` sets the slot back to nil, everything returns, the source row reappears (so a cancelled drag leaves nothing hidden).
+4. `performDrop` builds a `ThingsDropPlan` and validates it, applies the optimistic order (`orderOverride`, with animation), then `ThingsListViewModel.commitDrop` sends `AppState.moveTask(_:toPosition:)`. The position comes from `TaskPositioning` (same rules as the Vikunja web). When the server answers, the optimistic order is removed. If the send failed, the rows go back to their place (rollback).
+5. A drop that changes nothing returns `false`: the system brings the image back to the row.
 
 ### Drop without a second animation
 
 `performDrop` does not clear the slot before committing. `ThingsMacTodoList.apply(_:animation:landing:)` sets the optimistic order, clears the slot and flags `isLanding` in one transaction with animation disabled. The source row (`opacity` has `.animation(nil, value: isSource)`) and the sliding rows (`.animation(nil)` while `isLanding`) change at once, so the dragged row appears exactly where the gap was and no row moves a second time. When the save succeeds the optimistic order is removed without animation (it equals the server order); a failed save slides back with `ThingsMotion.reorder`. A drop that changes nothing closes the gap with the normal animation. Each saved move records an undo step (`ThingsMacModel.recordReorder`).
 
-## 3. Entre sections d'un même écran
+## 3. Between sections of the same screen
 
-Règles (`ThingsDropRules.when(from:to:)`), tout le reste est refusé :
+Rules (`ThingsDropRules.when(from:to:)`), everything else is refused:
 
-| De | Vers | Effet |
+| From | To | Effect |
 |-|-|-|
 | Today | This Evening | When = This Evening (label `things:evening`, via `ThingsListViewModel.schedule`) |
-| This Evening | Today | When = Today (retire le label) |
-| Projet (to-dos ouverts) | groupe Someday du même projet | When = Someday |
-| groupe Someday | to-dos ouverts du même projet | When retiré (Anytime) |
+| This Evening | Today | When = Today (removes the label) |
+| Project (open to-dos) | Someday group of the same project | When = Someday |
+| Someday group | open to-dos of the same project | When removed (Anytime) |
 
-Jamais source ni cible : Overdue (vient d'une deadline), Upcoming (demande une date), Logged (vient de l'état terminé). Le to-do prend une position entre ses voisins de la section cible (`TaskPositioning.position(forInserting:at:into:)`), envoyée après le changement de When. Pendant l'envoi, il est affiché dans la section cible (`ThingsDropArrangement`), l'ancienne section perd la ligne ; une section avec titre qui devient vide disparaît.
+Never a source or a target: Overdue (comes from a deadline), Upcoming (requires a date), Logged (comes from the finished state). The to-do takes a position between its neighbours in the target section (`TaskPositioning.position(forInserting:at:into:)`), sent after the When change. During the send, it is displayed in the target section (`ThingsDropArrangement`), the old section loses the row; a section with a title that becomes empty disappears.
 
-Une section cible doit contenir au moins un to-do pour apparaître : on ne peut pas déposer dans une section absente (This Evening vide).
+A target section must contain at least one to-do to appear: you cannot drop into an absent section (empty This Evening).
 
-## 4. Sur la sidebar
+## 4. On the sidebar
 
-- Une ligne de sidebar n'est surlignée au survol que si `ThingsMacModel.dropAction` renvoie une action (donc jamais pour un drop sans effet : même projet, cycle, liste sans sens). Le surlignage est animé (`dropTargetHighlight`).
-- Cibles et effets (`ThingsDropResolver`) : to-do sur projet ou Area = déplacer ; sur Inbox = projet Inbox ; sur Today ou Someday = planifier (sauf s'il y est déjà) ; projet sur projet ou Area = re-parenter (sans cycle). Upcoming, Anytime, Logbook refusent.
-- Le to-do quitte la liste par le changement de données : `ThingsMacTodoList` anime les entrées et sorties d'ids (`rowRemoval`), donc la ligne se referme comme un to-do terminé.
-- Le drop de la sidebar relit le payload dans le presse-papier (asynchrone) avant d'agir ; le survol utilise `ThingsDragSession`.
+- A sidebar row is highlighted on hover only if `ThingsMacModel.dropAction` returns an action (so never for a drop with no effect: same project, cycle, meaningless list). The highlight is animated (`dropTargetHighlight`).
+- Targets and effects (`ThingsDropResolver`): to-do on a project or Area = move; on Inbox = Inbox project; on Today or Someday = schedule (unless already there); project on a project or Area = re-parent (without a cycle). Upcoming, Anytime, Logbook refuse.
+- The to-do leaves the list through the data change: `ThingsMacTodoList` animates id insertions and removals (`rowRemoval`), so the row closes like a completed to-do.
+- The sidebar drop reads the payload from the pasteboard again (asynchronous) before acting; hover uses `ThingsDragSession`.
 
 ### ThingsDragSession
 
-Une cible ne peut pas lire le presse-papier pendant le survol, mais doit savoir ce qui est traîné. La source enregistre le payload au début du drag (`ThingsDragSession.shared.begin`). Aucun callback de fin de drag n'existe pour `onDrag` : la session est vidée au drop et au prochain clic. Elle ne sert qu'au retour visuel et à la validation du survol.
+A target cannot read the pasteboard during hover, but must know what is being dragged. The source records the payload at the start of the drag (`ThingsDragSession.shared.begin`). No end-of-drag callback exists for `onDrag`: the session is cleared on drop and on the next click. It only serves the visual feedback and the hover validation.
 
-## 5. Sans pointeur
+## 5. Without a pointer
 
-- Cmd-Opt-Haut et Cmd-Opt-Bas (et Cmd-Haut et Cmd-Bas) : un cran, dans la section (`ThingsReorder.plan(by:)`).
-- Actions d'accessibilité et menu contextuel : Move Up, Move Down, et Move to This Evening, Today, Someday ou Anytime quand la règle de la section 3 le permet (`ThingsDropRules.moves`). Ce sont les mêmes plans que le drag.
-- Move... (Maj-Cmd-M) reste le moyen clavier pour un projet ou une Area.
+- Cmd-Opt-Up and Cmd-Opt-Down (and Cmd-Up and Cmd-Down): one notch, within the section (`ThingsReorder.plan(by:)`).
+- Accessibility actions and the context menu: Move Up, Move Down, and Move to This Evening, Today, Someday or Anytime when the section 3 rule allows it (`ThingsDropRules.moves`). These are the same plans as a drag.
+- Move... (Shift-Cmd-M) remains the keyboard way for a project or an Area.
 
 ## 6. Tests
 
-`mDoneTests/Features/ThingsDropPlanTests.swift` : slot depuis le pointeur (haut et bas de ligne, zone d'en-tête, lignes sans frame, sections filtrées), glissement des lignes, plans (même section, autre section, refus), règles de section, ordre optimiste inter-sections, résolution des drops sur la sidebar, payload. `ThingsReorderTests` couvre toujours `ThingsReorder` et `TaskPositioning`.
+`mDoneTests/Features/ThingsDropPlanTests.swift`: slot from the pointer (top and bottom of a row, header area, rows without a frame, filtered sections), row sliding, plans (same section, other section, refusal), section rules, optimistic order across sections, sidebar drop resolution, payload. `ThingsReorderTests` still covers `ThingsReorder` and `TaskPositioning`.
 
-## 7. Limites connues et pistes
+## 7. Known limits and leads
 
-- Pas d'auto-défilement garanti pendant un drag près du bord (laissé au `ScrollView` du système, à vérifier sur Mac).
-- Pas de dépliage automatique d'une Area repliée survolée, ni d'ouverture d'une liste au survol prolongé.
-- Pas de drop d'un to-do sur un jour d'Upcoming ni sur un tag (04 section 10), pas de multi-sélection, pas de headings.
-- Les lignes qui changent de section se fondent (retrait et insertion) au lieu de glisser d'une section à l'autre.
-- Les lignes hors écran n'ont pas de frame (liste paresseuse) : le slot se calcule sur les lignes visibles, ce qui suffit car le pointeur est toujours sur une ligne visible.
-- Un drag annulé hors de la fenêtre laisse le payload dans `ThingsDragSession` jusqu'au prochain clic ; seul le retour visuel d'une cible peut en dépendre.
-- Les libellés `Move to This Evening`, `Move to Today`, `Move to Someday`, `Move to Anytime`, `Move` sont à ajouter à `Localizable.xcstrings` (fichier d'un autre lot).
+- No guaranteed auto-scroll during a drag near the edge (left to the system `ScrollView`, to verify on a Mac).
+- No automatic unfolding of a folded Area on hover, nor opening a list on a prolonged hover.
+- No drop of a to-do onto an Upcoming day or onto a tag (04 section 10), no multi-selection, no headings.
+- Rows that change section cross-fade (removal and insertion) instead of sliding from one section to another.
+- Off-screen rows have no frame (lazy list): the slot is computed on the visible rows, which is enough because the pointer is always on a visible row.
+- A drag cancelled outside the window leaves the payload in `ThingsDragSession` until the next click; only the visual feedback of a target can depend on it.
+- The labels `Move to This Evening`, `Move to Today`, `Move to Someday`, `Move to Anytime`, `Move` are to be added to `Localizable.xcstrings` (file from another batch).
 
 ## 8. Projects: nesting and sibling order (Mac)
 

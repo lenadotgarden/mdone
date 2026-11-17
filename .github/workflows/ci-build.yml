@@ -1,7 +1,7 @@
 name: Build check
 
-# Compilation rapide iOS + macOS sur chaque push de branche, sans tests.
-# C'est la boucle de feedback principale (pas de compilateur Swift local).
+# Fast iOS + macOS build on every branch push, without tests.
+# This is the main feedback loop (there is no local Swift compiler).
 on:
   push:
     branches-ignore: [gh-pages]

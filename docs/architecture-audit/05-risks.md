@@ -1,98 +1,98 @@
-# 05 - Risques d'écriture à l'aveugle et checklist CI
+# 05 - Risks of writing blind and CI checklist
 
-Contexte : aucun toolchain Swift sur l'hôte. Chaque erreur de compilation coûte un aller-retour CI (`ios-tests.yml` + `macos-tests.yml`, runners macOS, `xcodegen generate` puis `xcodebuild`). Ce document liste ce qui, dans ce dépôt précis, est le plus susceptible d'échouer.
+Context: no Swift toolchain on the host. Every compilation error costs a CI round trip (`ios-tests.yml` + `macos-tests.yml`, macOS runners, `xcodegen generate` then `xcodebuild`). This document lists what, in this specific repository, is most likely to fail.
 
-## 1. Réglages du projet qui conditionnent les erreurs
+## 1. Project settings that drive the errors
 
-| Fait observé | Conséquence |
+| Observed fact | Consequence |
 |:-|:-|
-| `SWIFT_VERSION: "5.9"`, aucun `SWIFT_STRICT_CONCURRENCY` trouvé | Mode langage Swift 5 : les violations de concurrence sont en général des avertissements, pas des erreurs. Les erreurs viennent surtout d'isolation `@MainActor` mal appelée et de `Sendable` explicite. Ne pas activer le mode Swift 6 pendant la refonte |
-| `xcodeVersion: "26.0"`, déploiement iOS 18 / macOS 15 | API récentes disponibles (`SwiftUI.Tab`, `@Observable`, `ContentUnavailableView` déjà utilisés). Ne pas utiliser d'API iOS 26 sans `#available` |
-| Un seul module `mDone` pour iOS et macOS | Toute API UIKit ou ActivityKit dans un fichier non gardé casse la compilation macOS |
-| `mDone-macOS` : `PRODUCT_MODULE_NAME: mDone` | Ne pas renommer ce réglage |
-| Tests macOS : cible hébergée, signature ad hoc, entitlements `mDone-macOS-CI.entitlements` | Un nouvel entitlement ou app group peut casser `macos-tests.yml` |
+| `SWIFT_VERSION: "5.9"`, no `SWIFT_STRICT_CONCURRENCY` found | Swift 5 language mode: concurrency violations are generally warnings, not errors. The errors mostly come from `@MainActor` isolation called incorrectly and from explicit `Sendable`. Do not enable Swift 6 mode during the redesign |
+| `xcodeVersion: "26.0"`, iOS 18 / macOS 15 deployment | Recent APIs are available (`SwiftUI.Tab`, `@Observable`, `ContentUnavailableView` already in use). Do not use an iOS 26 API without `#available` |
+| A single `mDone` module for iOS and macOS | Any UIKit or ActivityKit API in an unguarded file breaks the macOS build |
+| `mDone-macOS`: `PRODUCT_MODULE_NAME: mDone` | Do not rename this setting |
+| macOS tests: hosted target, ad hoc signing, `mDone-macOS-CI.entitlements` entitlements | A new entitlement or app group can break `macos-tests.yml` |
 
-## 2. Risques par catégorie
+## 2. Risks by category
 
-### Concurrence et isolation
+### Concurrency and isolation
 
-- `AppState` est `@Observable` (pas `@MainActor` au niveau de la classe) ; les méthodes mutantes portent `@MainActor` une par une. Une nouvelle méthode oubliant l'annotation compile mais mute hors du main actor. À copier : le patron existant.
-- Actors (`APIClient`, `*Service`, `SyncService`, `CalendarService`) : tout appel est `await`. Une méthode ajoutée dans un actor appelée depuis une vue sans `await` est une erreur.
-- `FocusManager`, `FocusOutboxService`, `LiveListRefresh` sont `@MainActor` : appel depuis un `Task { }` non isolé nécessite `await`.
-- `SyncService` est un actor mais ses méthodes `queueOperation` / `queueTaskEdit` sont marquées `@MainActor` (accès au contexte SwiftData principal) : mélange fragile. Ne pas "simplifier" sans tests (`SyncServiceTests`, `OfflineEditQueueTests`).
-- `WidgetDataProvider` est `@unchecked Sendable` ; `NetworkMonitor` et `ErrorBanner` utilisent `DispatchQueue`. Garder ces patrons tels quels.
-- Closures stockées dans `AppState` (`onTaskCompleted`, `onTaskDeleted`) et `FocusManager.taskLookup` : à déplacer avec précaution, elles sont non-`Sendable`.
-- Paramètres de fermeture dans les stores extraits : prévoir `@MainActor` explicite sur les types `@Observable` de ViewModels (cf. commentaire de `QuickAddBar` : "Explicit `@MainActor`" sinon l'isolation est mal inférée dans `Task {}`).
+- `AppState` is `@Observable` (not `@MainActor` at class level); the mutating methods carry `@MainActor` one by one. A new method missing the annotation compiles but mutates off the main actor. Copy the existing pattern.
+- Actors (`APIClient`, `*Service`, `SyncService`, `CalendarService`): every call is `await`. A method added to an actor and called from a view without `await` is an error.
+- `FocusManager`, `FocusOutboxService`, `LiveListRefresh` are `@MainActor`: calling them from a non-isolated `Task { }` requires `await`.
+- `SyncService` is an actor but its `queueOperation` / `queueTaskEdit` methods are marked `@MainActor` (access to the main SwiftData context): a fragile mix. Do not "simplify" it without tests (`SyncServiceTests`, `OfflineEditQueueTests`).
+- `WidgetDataProvider` is `@unchecked Sendable`; `NetworkMonitor` and `ErrorBanner` use `DispatchQueue`. Keep these patterns as they are.
+- Closures stored in `AppState` (`onTaskCompleted`, `onTaskDeleted`) and `FocusManager.taskLookup`: move them with care, they are non-`Sendable`.
+- Closure parameters in the extracted stores: plan for an explicit `@MainActor` on the `@Observable` ViewModel types (see the comment in `QuickAddBar`: "Explicit `@MainActor`", otherwise isolation is inferred wrongly inside `Task {}`).
 
 ### `@Observable` (Observation framework)
 
-- Pas de `@Published` : toute propriété lue par une vue et stockée doit être une propriété d'un type `@Observable`. Les propriétés calculées (`todayTasks`) sont réévaluées à chaque lecture : coût de recalcul à chaque changement de `tasks`.
-- `AppState` utilise `@ObservationIgnored` pour des champs internes (`reorderGeneration`, `activeTaskUpdates`, `taskUpdateWaiters`). Dans un store extrait, tout champ de plomberie doit recevoir la même annotation, sinon des mises à jour de vue parasites apparaissent.
-- `didSet` sur `tasks` et `isAuthenticated` incrémente `listRevision` ; un store extrait doit conserver ce comportement, que `LiveListRefresh` et des tests (`VisibleListRefreshTests`) peuvent observer.
-- Injection : `.environment(appState)` avec `@Environment(AppState.self)`. Un type `@Observable` ajouté doit être injecté dans `mDoneApp.appContent` sinon crash à l'exécution (pas d'erreur de compilation) : risque connu pour `FocusManager` iOS-only (absent sur macOS).
-- `Bindable(appState).activeError` est déjà utilisé ; un ViewModel local utilise `@Bindable` ou `@State`.
+- No `@Published`: any property read by a view and stored must be a property of an `@Observable` type. Computed properties (`todayTasks`) are re-evaluated on every read: recomputation cost on every change of `tasks`.
+- `AppState` uses `@ObservationIgnored` for internal fields (`reorderGeneration`, `activeTaskUpdates`, `taskUpdateWaiters`). In an extracted store, every plumbing field must get the same annotation, otherwise spurious view updates appear.
+- `didSet` on `tasks` and `isAuthenticated` increments `listRevision`; an extracted store must keep that behaviour, which `LiveListRefresh` and tests (`VisibleListRefreshTests`) can observe.
+- Injection: `.environment(appState)` with `@Environment(AppState.self)`. An added `@Observable` type must be injected in `mDoneApp.appContent`, otherwise it crashes at runtime (no compilation error): a known risk for the iOS-only `FocusManager` (absent on macOS).
+- `Bindable(appState).activeError` is already used; a local ViewModel uses `@Bindable` or `@State`.
 
-### Séparation plateforme
+### Platform separation
 
-- Le code app est compilé tel quel pour iOS et macOS ; 14 `#if os` dans `AppState`, 15 dans `TaskListScreen`, 8 dans `ServerSetupView`, 8 dans `mDoneApp`. Après déplacement vers `Platform/`, les `#if` doivent rester équilibrés (`#if`/`#endif`) : une copie partielle casse un seul des deux jobs CI.
-- `FocusManager` n'existe pas sur macOS : toute vue partagée qui référence `FocusManager` doit être gardée (c'est le cas dans `TaskRow`, `TaskDetailSheet`, `TaskListScreen`, `MainTabView`). Les nouveaux composants Things qui affichent un bouton Focus doivent faire de même.
-- Éléments iOS-seuls courants : `UIKit`, `UIImpactFeedbackGenerator`, `.topBarTrailing`, `.fullScreenCover`, `.navigationBarTitleDisplayMode`, `UIApplication`. macOS : `.automatic`, `NSColor`, pas de `fullScreenCover`.
-- Les widgets : `LockScreenWidgets` et le Live Activity sont compilés pour macOS avec `#if os(iOS)` interne ; ne pas casser ces gardes en restylant.
+- The app code is compiled as it stands for iOS and macOS; 14 `#if os` in `AppState`, 15 in `TaskListScreen`, 8 in `ServerSetupView`, 8 in `mDoneApp`. After moving to `Platform/`, the `#if`s must stay balanced (`#if`/`#endif`): a partial copy breaks only one of the two CI jobs.
+- `FocusManager` does not exist on macOS: any shared view that references `FocusManager` must be guarded (this is the case in `TaskRow`, `TaskDetailSheet`, `TaskListScreen`, `MainTabView`). The new Things components that show a Focus button must do the same.
+- Common iOS-only elements: `UIKit`, `UIImpactFeedbackGenerator`, `.topBarTrailing`, `.fullScreenCover`, `.navigationBarTitleDisplayMode`, `UIApplication`. macOS: `.automatic`, `NSColor`, no `fullScreenCover`.
+- Widgets: `LockScreenWidgets` and the Live Activity are compiled for macOS with an internal `#if os(iOS)`; do not break these guards while restyling.
 
 ### SwiftData
 
-- Cinq `@Model` : `CachedTask`, `CachedProject`, `CachedLabel`, `FocusRecord`, `PendingOperation`. **Ne pas modifier leurs propriétés** pendant la refonte : un changement de schéma sans migration passe par la récupération de store de `ModelStoreBootstrap`, qui peut supprimer le cache et la file hors ligne (rapport de #146, #155). Les ajouts de champs optionnels sont migrés automatiquement (commentaire dans `CachedTask`) ; tout le reste demande une validation sur un vrai appareil.
-- `@Attribute(.unique)` sur `CachedTask.id` : un `insert` d'un doublon fait un upsert, pas une erreur.
-- Les tests créent des conteneurs en mémoire (`ModelStoreBootstrap.makeInMemoryContainer`) ; l'hôte de test (`isHostingUnitTests`) n'ouvre pas le vrai store.
-- `@Query` n'est pas utilisé dans `Views/` (seul `modelContext` apparaît dans `QuickAddBar`, `FocusHistoryRow`, `FocusSyncSettingsSection`). Ne pas introduire `@Query` dans les nouvelles vues : cela contourne la couche Sync.
+- Five `@Model`s: `CachedTask`, `CachedProject`, `CachedLabel`, `FocusRecord`, `PendingOperation`. **Do not modify their properties** during the redesign: a schema change without a migration goes through the store recovery of `ModelStoreBootstrap`, which can delete the cache and the offline queue (reported in #146, #155). Additions of optional fields are migrated automatically (comment in `CachedTask`); everything else needs validation on a real device.
+- `@Attribute(.unique)` on `CachedTask.id`: inserting a duplicate performs an upsert, not an error.
+- The tests create in-memory containers (`ModelStoreBootstrap.makeInMemoryContainer`); the test host (`isHostingUnitTests`) does not open the real store.
+- `@Query` is not used in `Views/` (only `modelContext` appears in `QuickAddBar`, `FocusHistoryRow`, `FocusSyncSettingsSection`). Do not introduce `@Query` in the new views: it bypasses the Sync layer.
 
-### Mapping Things -> Vikunja (décisions produit, pas du code)
+### Things -> Vikunja mapping (product decisions, not code)
 
-Sans spécification (`docs/things-spec/` est vide), ces mappings sont des hypothèses à valider avant d'écrire du code :
-- **Inbox** (Things) : tâches sans projet ni date. Dans mDone, `projectId` est toujours non nul (`TaskCreateRequest`) : choisir le projet par défaut (`DefaultProjectPreference`) comme "Inbox".
-- **When / Deadline** : Vikunja n'a que `dueDate`, `startDate`, `endDate`. mDone utilise `dueDate` comme échéance ; `startDate` pourrait porter le "When". Décision à documenter, car `occurs(on:)`, les widgets et `Calendar` lisent `effectiveDueDate`.
-- **Someday, This Evening, Headings, Areas, Logbook** : aucun équivalent natif. Candidats : labels réservés (comme le label "Current" via `ensureCurrentLabel`), projets parents (`ProjectHierarchy`), buckets (`Bucket`), tâches terminées (`done`, `doneAt`).
-- Les agents et clients web voient les mêmes tâches : un label réservé est visible côté web.
+Without a specification (`docs/things-spec/` is empty), these mappings are assumptions to validate before writing code:
+- **Inbox** (Things): tasks without a project or a date. In mDone, `projectId` is always non-nil (`TaskCreateRequest`): choose the default project (`DefaultProjectPreference`) as "Inbox".
+- **When / Deadline**: Vikunja only has `dueDate`, `startDate`, `endDate`. mDone uses `dueDate` as the deadline; `startDate` could carry the "When". Decision to document, because `occurs(on:)`, the widgets and `Calendar` read `effectiveDueDate`.
+- **Someday, This Evening, Headings, Areas, Logbook**: no native equivalent. Candidates: reserved labels (like the "Current" label through `ensureCurrentLabel`), parent projects (`ProjectHierarchy`), buckets (`Bucket`), completed tasks (`done`, `doneAt`).
+- Agents and web clients see the same tasks: a reserved label is visible on the web side.
 
-### API et contrat
+### API and contract
 
-- Les mises à jour de tâches sont `PATCH` merge-patch : toute nouvelle écriture doit passer par `TaskUpdateRequest.onlyChanges(from:)`. Un `PUT` efface les champs omis.
-- Les lignes `PendingOperation` existantes sont rejouées telles quelles ; ne rien changer au format de `QueuedTaskEdit`.
-- Les endpoints nouveaux se déclarent dans `Endpoint.swift` ; vérifier `docs/vikunja-api-inventory.md` avant.
+- Task updates are `PATCH` merge-patch: every new write must go through `TaskUpdateRequest.onlyChanges(from:)`. A `PUT` erases the omitted fields.
+- The existing `PendingOperation` rows are replayed as they are; do not change the `QueuedTaskEdit` format.
+- New endpoints are declared in `Endpoint.swift`; check `docs/vikunja-api-inventory.md` first.
 
-### Localisation, accessibilité
+### Localisation, accessibility
 
-- Les textes sont dans `mDone/Localizable.xcstrings` (source `en`). Une nouvelle chaîne doit exister en anglais ; sans traduction elle s'affiche en anglais. Ne pas utiliser de `String(localized:)` avec des clés dynamiques.
-- Les widgets ont leur propre catalogue (`mDoneWidgets/Localizable.xcstrings`).
-- Aucun tiret cadratin ni double tiret dans le texte utilisateur, les commentaires, la documentation (règle de `CLAUDE.md`). Un contrôle est dans la checklist.
+- The strings are in `mDone/Localizable.xcstrings` (source `en`). A new string must exist in English; without a translation it is displayed in English. Do not use `String(localized:)` with dynamic keys.
+- The widgets have their own catalog (`mDoneWidgets/Localizable.xcstrings`).
+- No em-dash and no double hyphen in user text, comments or documentation (rule from `CLAUDE.md`). There is a check in the checklist.
 
-## 3. Checklist pour minimiser les itérations CI
+## 3. Checklist to minimise CI iterations
 
-Avant chaque push :
+Before every push:
 
-1. **Un seul sujet par PR** (déplacer OU modifier OU ajouter).
-2. **Équilibre des accolades et des `#if`/`#endif`** : compter par fichier modifié (`grep -c '^\s*#if' f` vs `grep -c '^\s*#endif' f`).
-3. **Imports** : tout fichier qui utilise `View`/`Color` importe `SwiftUI` ; qui utilise `@Model` importe `SwiftData` (le code actuel importe `Foundation` + `SwiftData` pour `CacheService.swift`).
-4. **Plateforme** : tout symbole UIKit/ActivityKit/`FocusManager` est dans un `#if os(iOS)` ; relire chaque vue partagée avec "est-ce que ça compile sur macOS ?".
-5. **Isolation** : chaque nouvelle méthode d'un type `@Observable` qui mute l'état porte `@MainActor` ; chaque appel d'actor porte `await`.
-6. **Visibilité** : tout est `internal` par défaut ; les tests utilisent `@testable`. Ne pas ajouter `private` sur un membre appelé par un test ou une autre extension d'un fichier différent (`private` est limité au fichier).
-7. **`private` et extensions multi-fichiers** : découper `AppState` en extensions dans d'autres fichiers casse les membres `private` utilisés (`taskService`, `syncService`, `handleError`, `pushWidgetData`) : les passer en `internal` ou `fileprivate` consciemment, avant le découpage.
-8. **Noms** : ne pas créer de type homonyme d'un type SwiftUI/Foundation (`Tab`, `Section`, `Label`, `Task`). Le code actuel écrit déjà `SwiftUI.Tab` pour lever une collision et `VLabel`, `VTask`, `VNotification` évitent `Label`/`Task`/`Notification`.
-9. **Exhaustivité des `switch`** sur `MacContentView.SidebarSection` et `RelationKind` : un `case` ajouté casse chaque `switch` sans `default`. Chercher avec `grep -rn 'SidebarSection'`.
-10. **Initialiseurs** : `VTask` et `TaskUpdateRequest` sont des structs `Codable` avec init memberwise implicite ; ajouter un champ modifie l'ordre/les paramètres de l'init partout (tests inclus). Ajouter les champs avec valeur par défaut.
-11. **`project.yml`** : ne pas toucher ; si un nouveau dossier racine est nécessaire, c'est une PR à part avec `xcodegen generate` vérifié en CI.
-12. **Textes** : chercher le tiret cadratin avec `grep -rn` sur le caractère Unicode U+2014 dans les fichiers modifiés, et relire les nouveaux fichiers pour tout double tiret (hors options de CLI dans les scripts).
-13. **Previews** : `#Preview` qui référence un type iOS-seul casse macOS ; les envelopper.
-14. **Tests** : après un déplacement, `find mDoneTests -name '*.swift' | wc -l` doit rester 74 + `Helpers` (2).
-15. **Pousser en brouillon** : ouvrir la PR en draft, lire la sortie `xcodebuild` des deux jobs, corriger en lot plutôt que push par push.
+1. **One topic per PR** (move OR change OR add).
+2. **Balanced braces and `#if`/`#endif`**: count per modified file (`grep -c '^\s*#if' f` vs `grep -c '^\s*#endif' f`).
+3. **Imports**: every file that uses `View`/`Color` imports `SwiftUI`; one that uses `@Model` imports `SwiftData` (the current code imports `Foundation` + `SwiftData` for `CacheService.swift`).
+4. **Platform**: every UIKit/ActivityKit/`FocusManager` symbol is inside a `#if os(iOS)`; re-read every shared view asking "does this compile on macOS?".
+5. **Isolation**: every new method of an `@Observable` type that mutates state carries `@MainActor`; every actor call carries `await`.
+6. **Visibility**: everything is `internal` by default; tests use `@testable`. Do not add `private` to a member called by a test or by another extension in a different file (`private` is limited to the file).
+7. **`private` and multi-file extensions**: splitting `AppState` into extensions in other files breaks the `private` members in use (`taskService`, `syncService`, `handleError`, `pushWidgetData`): make them `internal` or `fileprivate` deliberately, before the split.
+8. **Names**: do not create a type homonymous with a SwiftUI/Foundation type (`Tab`, `Section`, `Label`, `Task`). The current code already writes `SwiftUI.Tab` to lift a collision, and `VLabel`, `VTask`, `VNotification` avoid `Label`/`Task`/`Notification`.
+9. **`switch` exhaustiveness** on `MacContentView.SidebarSection` and `RelationKind`: an added `case` breaks every `switch` without a `default`. Search with `grep -rn 'SidebarSection'`.
+10. **Initialisers**: `VTask` and `TaskUpdateRequest` are `Codable` structs with an implicit memberwise init; adding a field changes the init's order/parameters everywhere (tests included). Add fields with a default value.
+11. **`project.yml`**: do not touch it; if a new root folder is needed, that is a separate PR with `xcodegen generate` verified in CI.
+12. **Text**: search for the em-dash with `grep -rn` on the Unicode character U+2014 in the modified files, and re-read the new files for any double hyphen (apart from CLI options in the scripts).
+13. **Previews**: a `#Preview` that references an iOS-only type breaks macOS; wrap them.
+14. **Tests**: after a move, `find mDoneTests -name '*.swift' | wc -l` must stay at 74 + `Helpers` (2).
+15. **Push as a draft**: open the PR as a draft, read the `xcodebuild` output of both jobs, fix in batches rather than push by push.
 
-## 4. Risques organisationnels
+## 4. Organisational risks
 
-| Risque | Mitigation |
+| Risk | Mitigation |
 |:-|:-|
-| `AppState` est le point d'appel de 22 fichiers de tests et de 28 vues | Façade déléguante ; ne supprimer une méthode qu'après migration de ses appelants |
-| Régression silencieuse sur le comportement hors ligne (pas de compilation qui l'attrape) | Ne pas toucher `SyncService`/`QueuedTaskEdit` ; lancer `OfflineEditQueueTests`, `SyncServiceTests` à chaque PR (déjà dans le job) |
-| Deux UI à maintenir pendant la bascule | Drapeau, durée limitée (étape 11 du plan 04) |
-| Spécification Things absente | Écrire d'abord `docs/things-spec/` (dossier vide) avec les règles de chaque liste, puis les tests de `Domain/ThingsLists` avant les vues |
-| Le calendrier "à améliorer" | La logique d'occurrences (`TaskOccurrence`, `TaskRecurrence`, `AppState.occurrences`) est testée : améliorer la grille sans toucher la logique |
-| Widgets compilés par 5 cibles | Ne rien ajouter à `mDoneShared/` qui dépende de l'app ; vérifier que `mDoneWidgetRenderTests` compile (cible sans hôte) |
+| `AppState` is the call point for 22 test files and 28 views | Delegating facade; delete a method only after migrating its callers |
+| Silent regression on the offline behaviour (no compilation catches it) | Do not touch `SyncService`/`QueuedTaskEdit`; run `OfflineEditQueueTests`, `SyncServiceTests` on every PR (already in the job) |
+| Two UIs to maintain during the switch | Flag, limited duration (step 11 of plan 04) |
+| Things specification missing | Write `docs/things-spec/` first (empty folder) with the rules of each list, then the `Domain/ThingsLists` tests before the views |
+| The calendar "to improve" | The occurrence logic (`TaskOccurrence`, `TaskRecurrence`, `AppState.occurrences`) is tested: improve the grid without touching the logic |
+| Widgets compiled by 5 targets | Do not add anything to `mDoneShared/` that depends on the app; check that `mDoneWidgetRenderTests` compiles (target without a host) |

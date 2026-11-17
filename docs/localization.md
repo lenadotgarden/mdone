@@ -1,6 +1,6 @@
 # Localization
 
-mDone's user-facing text lives in String Catalogs (`.xcstrings`). English is
+Fern's user-facing text lives in String Catalogs (`.xcstrings`). English is
 the source language: the English text *is* the key, so adding a language never
 touches Swift.
 
@@ -185,7 +185,7 @@ The rest of the app (screens from before the fork) has no French yet.
   (`"9:00 AM"`) rather than formatting a time for the locale. Translators can
   render these correctly, but formatting them properly would be better and
   would drop six keys.
-- The widget extension's `CFBundleDisplayName` ("mDone Focus", set in
+- The widget extension's `CFBundleDisplayName` ("Fern Focus", set in
   `project.yml`) is not localized. It would need its own
   `mDoneWidgets/InfoPlist.xcstrings`.
 - `ProjectBoardView`'s column accessibility label interpolates an

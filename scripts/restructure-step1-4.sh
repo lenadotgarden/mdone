@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Deplacements mecaniques (docs/architecture-audit/04, etapes 1 a 4). Idempotent: ignore les fichiers absents.
+# Mechanical moves (docs/architecture-audit/04, steps 1 to 4). Idempotent: missing files are skipped.
 set -e
 cd "$(dirname "$0")/../mDone"
 mv_() { dest="$1"; shift; mkdir -p "$dest"; for f in "$@"; do [ -e "$f" ] && git mv "$f" "$dest/"; done; true; }
